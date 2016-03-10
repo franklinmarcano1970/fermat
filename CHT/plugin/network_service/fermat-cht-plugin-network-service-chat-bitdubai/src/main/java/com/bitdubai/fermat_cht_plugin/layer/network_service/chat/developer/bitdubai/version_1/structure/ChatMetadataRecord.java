@@ -8,7 +8,6 @@ import com.bitdubai.fermat_cht_api.layer.network_service.chat.enums.ChatProtocol
 import com.bitdubai.fermat_cht_api.layer.network_service.chat.enums.DistributionStatus;
 import com.bitdubai.fermat_cht_api.layer.network_service.chat.interfaces.ChatMetadata;
 
-
 import java.sql.Timestamp;
 import java.util.Objects;
 import java.util.UUID;
@@ -156,40 +155,40 @@ public class ChatMetadataRecord implements ChatMetadata{
             return false;
         if(!(obj instanceof ChatMetadataRecord))
             return false;
-        if(this.chatId != ((ChatMetadataRecord) obj).getChatId())
+        ChatMetadataRecord record = (ChatMetadataRecord) obj;
+
+        if(this.chatId != record.getChatId())
             return false;
-        if(this.transactionId != ((ChatMetadataRecord) obj).getTransactionId())
+        if(this.transactionId != record.getTransactionId())
             return false;
-        if(!Objects.equals(this.responseToNotification, ((ChatMetadataRecord) obj).getResponseToNotification()))
+        if(!Objects.equals(this.responseToNotification, record.getResponseToNotification()))
             return false;
-        if(this.objectId != ((ChatMetadataRecord) obj).getObjectId())
+        if(this.objectId != record.getObjectId())
             return false;
-        if(this.localActorType != ((ChatMetadataRecord) obj).getLocalActorType())
+        if(this.localActorType != record.getLocalActorType())
             return false;
-        if(!Objects.equals(this.localActorPublicKey, ((ChatMetadataRecord) obj).getLocalActorPublicKey()))
+        if(!Objects.equals(this.localActorPublicKey, record.getLocalActorPublicKey()))
             return false;
-        if(this.remoteActorType != ((ChatMetadataRecord) obj).getRemoteActorType())
+        if(this.remoteActorType != record.getRemoteActorType())
             return false;
-        if(!Objects.equals(this.remoteActorPublicKey, ((ChatMetadataRecord) obj).getRemoteActorPublicKey()))
+        if(!Objects.equals(this.remoteActorPublicKey, record.getRemoteActorPublicKey()))
             return false;
-        if(!Objects.equals(this.chatName, ((ChatMetadataRecord) obj).getChatName()))
+        if(!Objects.equals(this.chatName, record.getChatName()))
             return false;
-        if(this.chatMessageStatus != ((ChatMetadataRecord) obj).getChatMessageStatus())
+        if(this.chatMessageStatus != record.getChatMessageStatus())
             return false;
-        if(this.messageStatus != ((ChatMetadataRecord) obj).getMessageStatus())
+        if(this.messageStatus != record.getMessageStatus())
             return false;
-        if(this.date != ((ChatMetadataRecord) obj).getDate())
+        if(this.date != record.getDate())
             return false;
-        if(this.messageId != ((ChatMetadataRecord) obj).getMessageId())
+        if(this.messageId != record.getMessageId())
             return false;
-        if(!Objects.equals(this.message, ((ChatMetadataRecord) obj).getMessage()))
+        if(!Objects.equals(this.message, record.getMessage()))
             return false;
-        if(this.distributionStatus != ((ChatMetadataRecord) obj).getDistributionStatus())
+        if(this.distributionStatus != record.getDistributionStatus())
             return false;
 
-        if(!Objects.equals(this.processed, ((ChatMetadataRecord) obj).getProcessed()))
-            return false;
-        return true;
+        return Objects.equals(this.processed, record.getProcessed());
  }
 
     /**
@@ -478,5 +477,7 @@ public class ChatMetadataRecord implements ChatMetadata{
     public void setMessageId(UUID messageId) {
         this.messageId = messageId;
     }
+
+
 
 }

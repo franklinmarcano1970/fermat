@@ -1,6 +1,5 @@
 package com.bitdubai.fermat_cht_plugin.layer.network_service.chat.developer.bitdubai.version_1;
 
-import com.bitdubai.fermat_api.CantStartAgentException;
 import com.bitdubai.fermat_api.CantStartPluginException;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.utils.PluginVersionReference;
 import com.bitdubai.fermat_api.layer.all_definition.components.enums.PlatformComponentType;
@@ -11,7 +10,6 @@ import com.bitdubai.fermat_api.layer.all_definition.developer.DeveloperDatabaseT
 import com.bitdubai.fermat_api.layer.all_definition.developer.DeveloperDatabaseTableRecord;
 import com.bitdubai.fermat_api.layer.all_definition.developer.DeveloperObjectFactory;
 import com.bitdubai.fermat_api.layer.all_definition.developer.LogManagerForDevelopers;
-import com.bitdubai.fermat_api.layer.all_definition.enums.Actors;
 import com.bitdubai.fermat_api.layer.all_definition.enums.Plugins;
 import com.bitdubai.fermat_api.layer.all_definition.events.EventSource;
 import com.bitdubai.fermat_api.layer.all_definition.network_service.enums.NetworkServiceType;
@@ -32,8 +30,6 @@ import com.bitdubai.fermat_ccp_api.layer.actor.intra_user.exceptions.CantGetNoti
 import com.bitdubai.fermat_ccp_api.layer.actor.intra_user.exceptions.NotificationNotFoundException;
 import com.bitdubai.fermat_cht_api.all_definition.enums.MessageStatus;
 import com.bitdubai.fermat_cht_api.all_definition.events.enums.EventType;
-import com.bitdubai.fermat_cht_api.all_definition.exceptions.SendReadMessageNotificationException;
-import com.bitdubai.fermat_cht_api.layer.middleware.interfaces.Chat;
 import com.bitdubai.fermat_cht_api.layer.network_service.chat.enums.ChatMessageStatus;
 import com.bitdubai.fermat_cht_api.layer.network_service.chat.enums.ChatMessageTransactionType;
 import com.bitdubai.fermat_cht_api.layer.network_service.chat.enums.ChatProtocolState;
@@ -53,7 +49,6 @@ import com.bitdubai.fermat_cht_plugin.layer.network_service.chat.developer.bitdu
 import com.bitdubai.fermat_cht_plugin.layer.network_service.chat.developer.bitdubai.version_1.exceptions.CantInsertRecordDataBaseException;
 import com.bitdubai.fermat_cht_plugin.layer.network_service.chat.developer.bitdubai.version_1.exceptions.CantReadRecordDataBaseException;
 import com.bitdubai.fermat_cht_plugin.layer.network_service.chat.developer.bitdubai.version_1.exceptions.CantUpdateRecordDataBaseException;
-import com.bitdubai.fermat_cht_plugin.layer.network_service.chat.developer.bitdubai.version_1.structure.ChatExecutorAgent;
 import com.bitdubai.fermat_cht_plugin.layer.network_service.chat.developer.bitdubai.version_1.structure.ChatMetadataRecord;
 import com.bitdubai.fermat_cht_plugin.layer.network_service.chat.developer.bitdubai.version_1.structure.ChatTransmissionJsonAttNames;
 import com.bitdubai.fermat_cht_plugin.layer.network_service.chat.developer.bitdubai.version_1.structure.EncodeMsjContent;
@@ -76,7 +71,6 @@ import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -102,16 +96,9 @@ public class ChatNetworkServicePluginRoot extends AbstractNetworkServiceBase imp
      */
     private ChatNetworkServiceDeveloperDatabaseFactory chatNetworkServiceDeveloperDatabaseFactory;
 
-    /**
-     * Represent the EVENT_SOURCE
-     */
-    public final static EventSource EVENT_SOURCE = EventSource.NETWORK_SERVICE_CHAT;
-
     ExecutorService executorService;
 
-    private ChatExecutorAgent chatExecutorAgent;
-
-    private long reprocessTimer =  300000; //five minutes
+    private static final long reprocessTimer =  300000; //five minutes
 
     private Timer timer = new Timer();
 
@@ -137,28 +124,7 @@ public class ChatNetworkServicePluginRoot extends AbstractNetworkServiceBase imp
     public ChatMetadataRecordDAO getChatMetadataRecordDAO() {
         return chatMetadataRecordDAO;
     }
-    public void initializeAgent() {
 
-        try {
-
-            if (chatExecutorAgent == null) {
-
-                chatExecutorAgent = new ChatExecutorAgent(
-                        this,
-                        errorManager,
-                        eventManager,
-                        getChatMetadataRecordDAO()
-                );
-            }
-
-            if (!chatExecutorAgent.isRunning())
-                chatExecutorAgent.start();
-
-        } catch(final CantStartAgentException e) {
-
-            errorManager.reportUnexpectedPluginException(this.getPluginVersionReference(), UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
-        }
-    }
     @Override
     protected void onStart() {
 
@@ -167,11 +133,6 @@ public class ChatNetworkServicePluginRoot extends AbstractNetworkServiceBase imp
          * Initialize the data base
          */
             initializeDb();
-        /*
-         * Initialize cache data base
-         */
-           // initializeCacheDb();
-
         /*
          * Initialize Developer Database Factory
          */
@@ -197,26 +158,12 @@ public class ChatNetworkServicePluginRoot extends AbstractNetworkServiceBase imp
 
 
     }
-    public PlatformComponentProfile constructBasicPlatformComponentProfile(String identityPublicKey,
-                                                                           PlatformComponentType platformComponentType) {
-
-
-        return wsCommunicationsCloudClientManager.getCommunicationsCloudClientConnection()
-                .constructBasicPlatformComponentProfileFactory(
-                        identityPublicKey,
-                        NetworkServiceType.UNDEFINED,
-                        platformComponentType
-
-                );
-    }
 
     @Override
     public void stop() {
         getCommunicationNetworkServiceConnectionManager().stop();
-        chatExecutorAgent.stop();
         executorService.shutdownNow();
         super.stop();
-       // executorService.shutdownNow();
     }
 
     @Override
@@ -398,41 +345,16 @@ public class ChatNetworkServicePluginRoot extends AbstractNetworkServiceBase imp
     }
 
     @Override
-    protected void onClientSuccessfulReconnect() {
-        // This network service don t need to do anything in this method
-    }
-
-    @Override
-    protected void onClientConnectionLoose() {
-        // This network service don t need to do anything in this method
-    }
-
-    @Override
     protected void onFailureComponentConnectionRequest(PlatformComponentProfile remoteParticipant) {
         //I check my time trying to send the message
         checkFailedDeliveryTime(remoteParticipant.getIdentityPublicKey());
     }
 
-    @Override
-    protected void onReceivePlatformComponentProfileRegisteredList(CopyOnWriteArrayList<PlatformComponentProfile> remotePlatformComponentProfileRegisteredList) {
-        // This network service don t need to do anything in this method
-    }
-
-    @Override
-    protected void onCompleteActorProfileUpdate(PlatformComponentProfile platformComponentProfileUpdate) {
-        // This network service don t need to do anything in this method
-    }
-
-    @Override
-    protected void onFailureComponentRegistration(PlatformComponentProfile platformComponentProfile) {
-        // This network service don t need to do anything in this method
-    }
 
     @Override
     public void pause() {
 
         getCommunicationNetworkServiceConnectionManager().pause();
-        chatExecutorAgent.pause();
 
         super.pause();
     }
@@ -441,30 +363,7 @@ public class ChatNetworkServicePluginRoot extends AbstractNetworkServiceBase imp
 
         // resume connections manager.
         getCommunicationNetworkServiceConnectionManager().resume();
-        chatExecutorAgent.resume();
-
         super.resume();
-    }
-    @Override
-    public PlatformComponentProfile getProfileDestinationToRequestConnection(String identityPublicKeyDestination, NetworkServiceType senderNsType, PlatformComponentType senderType) {
-        return this.wsCommunicationsCloudClientManager.getCommunicationsCloudClientConnection()
-                .constructPlatformComponentProfileFactory(identityPublicKeyDestination,
-                        getNetworkServiceProfile().getAlias(),
-                        getNetworkServiceProfile().getName(),
-                        NetworkServiceType.CHAT,
-                        PlatformComponentType.NETWORK_SERVICE,
-                        "");
-    }
-
-    @Override
-    public PlatformComponentProfile getProfileSenderToRequestConnection(String identityPublicKeySender, NetworkServiceType senderNsType, PlatformComponentType senderType) {
-        return this.wsCommunicationsCloudClientManager.getCommunicationsCloudClientConnection()
-                                                                       .constructPlatformComponentProfileFactory(identityPublicKeySender,
-                                                                               getNetworkServiceProfile().getAlias(),
-                                                                               getNetworkServiceProfile().getName(),
-                                                                               NetworkServiceType.CHAT,
-                                                                               PlatformComponentType.NETWORK_SERVICE,
-                                                                               "");
     }
 
     @Override
@@ -502,19 +401,19 @@ public class ChatNetworkServicePluginRoot extends AbstractNetworkServiceBase imp
     private void launchIncomingChatNotification(UUID chatID){
         IncomingChat event = (IncomingChat) getEventManager().getNewEvent(EventType.INCOMING_CHAT);
         event.setChatId(chatID);
-        event.setSource(ChatNetworkServicePluginRoot.EVENT_SOURCE);
+        event.setSource(eventSource);
         getEventManager().raiseEvent(event);
     }
     private void launchOutgoingChatNotification(UUID chatID){
         OutgoingChat event = (OutgoingChat) getEventManager().getNewEvent(EventType.OUTGOING_CHAT);
         event.setChatId(chatID);
-        event.setSource(ChatNetworkServicePluginRoot.EVENT_SOURCE);
+        event.setSource(eventSource);
         getEventManager().raiseEvent(event);
     }
     private void launcheIncomingChatStatusNotification(UUID chatID){
         IncomingNewChatStatusUpdate event = (IncomingNewChatStatusUpdate) getEventManager().getNewEvent(EventType.INCOMING_STATUS);
         event.setChatId(chatID);
-        event.setSource(ChatNetworkServicePluginRoot.EVENT_SOURCE);
+        event.setSource(eventSource);
         getEventManager().raiseEvent(event);
     }
     private void changeDestination(ChatMetadataRecord chatMetadataRecord) {
@@ -795,8 +694,8 @@ public class ChatNetworkServicePluginRoot extends AbstractNetworkServiceBase imp
                             try {
 
                                 sendNewMessage(
-                                        constructBasicPlatformComponentProfile(localActorPubKey, senderType),
-                                        constructBasicPlatformComponentProfile(remoteActorPubKey, receiverType),
+                                        getProfileSenderToRequestConnection(localActorPubKey, NetworkServiceType.UNDEFINED, senderType),
+                                        getProfileDestinationToRequestConnection(remoteActorPubKey, NetworkServiceType.UNDEFINED, receiverType),
                                         msjContent
                                 );
 
@@ -883,8 +782,8 @@ public class ChatNetworkServicePluginRoot extends AbstractNetworkServiceBase imp
                             try {
 
                                 sendNewMessage(
-                                        constructBasicPlatformComponentProfile(localActorPubKey, senderType),
-                                        constructBasicPlatformComponentProfile(remoteActorPubKey, receiverType),
+                                        getProfileSenderToRequestConnection(localActorPubKey, NetworkServiceType.UNDEFINED, senderType),
+                                        getProfileDestinationToRequestConnection(remoteActorPubKey, NetworkServiceType.UNDEFINED, receiverType),
                                         msjContent
                                 );
 
@@ -993,8 +892,8 @@ public class ChatNetworkServicePluginRoot extends AbstractNetworkServiceBase imp
 
                     try {
                         sendNewMessage(
-                                constructBasicPlatformComponentProfile(sender,senderType),
-                                constructBasicPlatformComponentProfile(remote,remoteType),
+                                getProfileSenderToRequestConnection(sender, NetworkServiceType.UNDEFINED, senderType),
+                                getProfileDestinationToRequestConnection(remote, NetworkServiceType.UNDEFINED, remoteType),
                                 EncodedMsg
                         );
                     } catch (CantSendMessageException e) {
