@@ -4702,6 +4702,278 @@
         </super_layer>
     </super_layers>
     <processes>
+        <process platform="CHT" name="Edit Contact Detail" description="Allows user to edit the Contact Details" previous="">
+            <steps>
+                <step id="0" title="Button: Edit Contact" description="The user selects a connection and push on 'Edit Contact'" component="" type="start" platform="CHT" superlayer="" layer="Sub App" name="Chat">
+                    <next>
+                        <step id="1" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="1" title="Send Contact ID" description="A method send the contact ID to obtain contact info" component="plugin" type="activity" platform="CHT" superlayer="" layer="Sub App Module" name="Chat">
+                    <next>
+                        <step id="2" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="2" title="Get Contact Info" description="Get Contact Info" component="plugin" type="activity" platform="CHT" superlayer="" layer="Sub App Module" name="Chat">
+                    <next>
+                        <step id="3" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="3" title="Show Edit Contact Form" description="Show Edit Contact Form" type="end" platform="CHT" name="Chat" superlayer="" layer="Sub App" component=""> </step>
+            </steps>
+        </process>
+        <process platform="CHT" name="Edit Contact" description="Allows user to Edit Contact" previous="">
+            <steps>
+                <step id="0" title="Show Edit Contact Form" description="Will Show Edit Contact Form" type="start" platform="CHT" superlayer="" layer="Sub App" component="" name="Chat">
+                    <next>
+                        <step id="1" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="1" title="User Enters Info" description="User Enters Info to override and pushes button 'save'" type="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <step id="2" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="2" title="Update in Database" description="The Info will be updated in the Database" type="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <step id="3" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="3" title="Show Confirmation Message" description="The Confirmation Message Will Appear on Screen" type="end" component="Plugin" platform="CHT" superlayer="" layer="Sub App Module" name="Chat"></step>
+            </steps>
+        </process>
+        <process platform="CHT" name="View Contact Detail" description="Allows User to View Contact Detail" previous="">
+            <steps>
+                <step>
+                    <step id="0" title="Show Contact List" description="Will Show Contact List" type="start" component="" platform="CHT" name="Chat" layer="Sub App" superlayer="">
+                        <next>
+                        <step id="1" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="1" title="Select Contact" description="The User will select a contact and then will push on button 'Details'" type"activity" component="" platform="CHT" name="Chat" layer="Sub App" superlayer="">
+                    <next>
+                        <step id="2" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="2" title="Show Contact Detail from the ID" description="Execute Method to Show Contact Detail Info From the Given ID" type="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <step id="3" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="3" title="Select Contacts in Database" description="It will select the contacts in the database" type="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <step id="4" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="4" title="Show Contact Detail" description="Show Contact Detail Form to User" type="end" component="" platform="CHT" name="Chat" layer="Sub App" superlayer=""></step>
+            </steps>
+        </process>
+        <process platform="CHT" name="Delete Contacts" description="Allows user to delete contacts" previous="">
+            <steps>
+                <step id="0" title="User presses 'Delete Contact'" description="The user Selects a connection and presses button'Delete Contact'" type="start" component="" platform="CHT" name="Chat" layer="Sub App" superlayer="">
+                    <next>
+                        <step id="1" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="1" title="Send Contact ID" description="A method sends contact ID to erase it" type="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <stepe id="2" type="direct call"></stepe>
+                    </next>
+                </step>
+                <step id="2" title="Delete Contact in Database" description="The contact information will be erased from the Database" type="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <step id="3" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="3" title="Show Confirmation Message" description="A Confirmation Message will be displayed on the screen" type="end" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer=""></step>
+            </steps>
+        </process>
+        <process platform="CHT" name="Add Contacts" description="Allows the user add contacts" previous="">
+            <steps>
+                <step id="0" title="Show Connections" description="The app will show the available connections" type="start" component="" platform="CHT" name="Chat" layer="Sub App" superlayer="">
+                    <next>
+                        <step id="1" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="1" title="Select Connection" description="The user selects a connection and put an alias, then he will press the button'Add Contact'" type="activity" component="" platform="CHT" name="Chat" layer="Sub App" superlayer="">
+                    <next>
+                        <step id="2" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="2" title="Send Contact Info" description="A method will send contact info as arguments" type="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <step id="3" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="3" title="Persists in Database" description="Info will be keeped in database" type="end" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer=""></step>
+            </steps>
+        </process>
+        <process platform="CHT" name="List of Contacts" description="This process will show the contact list to the user" previous="">
+            <steps>
+                <step id="0" title="Button 'List Contact'" description="User will press button'List Contact'" type="start" component="" platform="CHT" name="Chat" layer="Sub App" superlayer="">
+                    <next>
+                        <step id="1" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="1" title="Execute method List_Contacts" description="The method List_Contacts will be executed" type="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <step id="2" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="2" title="Select Contacts in the Database" description="The contacts will be seleted from the database" tupe="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <step id="3" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="3" title="Show Contact List to user" description="The Contact List will be displayed on the screen to the user" type="end" component="" platform="CHT" name="Chat" layer="Sub App" superlayer=""></step>
+            </steps>
+        </process>
+        <process platform="CHT" name="Show Contact Connections" description="This process will show the contact connections available" previous="">
+            <steps>
+                <step id="0" title="Button 'List Connections" description="The User will press the button 'List Connections" type="start" component="" platform="CHT" name="Chat" layer="Sub App" superlayer="">
+                    <next>
+                        <step id="1" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="1" title="Execute method to list connection" description="A method to list connections will be executed" type="activity" component="" platform="CHT" name="Chat" layer="Sub App" superlayer="">
+                    <next>
+                        <step id="2" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="2" title="List by ID" description="Request connections list by Identity ID" type="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <step id="3" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="3" title="Returns a List<Connections>" description="The request will return a List<Connections> data type" type="activity" component="" platform="CHT" name="Chat" layer="" superlayer="">
+                    <next>
+                        <step id="4" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="4" title="Receives the List<Connections>" description="It will receive the List>Connections> from Fermat platforms" type="activity" component="" platform="CHT" name="Chat" layer="" superlayer="">
+                    <next>
+                        <step id="5" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="5" title="Show Connections" description="The Contact Connections will be displayed" type="end" component="" platform="CHT" name="Chat" layer="" superlayer="">
+                </step>
+            </steps>
+        </process>
+        <process platform="CHT" name="Make a Local Chat" description="This process describes how to make a local chat" previous="">
+            <steps>
+                <step id="0" title="Button Chat" description="This button will create the chat" type="start" component="" platform="CHT" name="Chat" layer="Sub App" superlayer="">
+                    <next>
+                        <step id="1" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="1" title="Execute method to create the Chat" description="A method will be launched to create the chat sending as an argument the Object ID(UUID)" type="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <step id="2" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="2" title="Database Registration" description="The information will be registrated in the chat database" type="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <step id="3" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="3" title="Receive event that is created in Chat's registry" description="It will receive the event that is created in chat's registry to proceed to the remote sending and left the received event waiting for the remote" type="activity" component="" platform="CHT" name="Chat" layer="Middleware" superlaryer="">
+                    <next>
+                        <step id="4" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="4" title="The Event Has Received a Message" description="The process will receive and event that a message has been received and it will proceed to record the chat in the database, a event created in the chat will be launched" type="end" component="" platform="CHT" name="Chat" layer="Middleware" superlayer=""></step>
+            </steps>
+        </process>
+        <process platform="CHT" name="List of Non-Empty Chats" description="This will display a list of non-empty chats" previous="">
+            <steps>
+                <step id="0" title="Button 'List Chats'" description="The user will press the button 'list chats" type="start" component="" platform="CHT" name="Chat" layer="Sub App" superlayer="">
+                    <next>
+                        <step id="1" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="1" title="Execute Method to List Non-Empty Chats" description="A method to list non-empty chats will be executed, sending as an argument the object's ID(UUID) generated at chat's creation. It will return a List<> object" type="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <step id="2" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="2" title="Execute Method that Returns Object List<>" description="A method that returns object List<> will be executed alongside the transactions or chats, associated to chat's UUID" type="end" component="" platform="CHT" name="Chat" layer="Middlware" superlayer=""></step> "
+            </steps>
+        </process>
+        <process platform="CHT" name="List the Contents of a Chat" description="This process will list the contents of a Chat" previous="">
+            <steps>
+                <step id="0" title="Button 'Chat Detail'" description="The user will press on 'Chat Detail' button" type="start" component="" platform="CHT" name="Chat" layer="Sub App" superlayer="">
+                    <next>
+                        <step id="1" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="1" title="Execute Method to Locate Object" description="A method to locate object will be executed, sending as an argument an UUID from the object generated when the chat is created and returns a unique object from the chaat" type="activity" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module" superlayer="">
+                    <next>
+                        <step id="2" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="2" title="Execute Method that Returns Detailed Object" description="The method that returns the object will be executed, with the UUID from Chat" type="end" component="" platform="CHT" name="Chat" layer="Middleware" superlayer=""></step>
+            </steps>
+        </process>
+        <process platform="CHT" name="Send Message" description="The user sends a message" previous="">
+            <steps>
+                <step id="0" title="Text Message" description="The User writes a text message and pushes the 'send' button" type="start" component="Plugin" platform="CHT" name="Chat" layer="Sub App Module Local" superlayer="">
+                    <next>
+                        <step id="1" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="1" title="Validate Sender and Received Identities" description="The Sender and Received Identities will be validated and will persist in Database" type="activity" component="" platform="CHT" name="Chat" layer="Middleware" superlayer="">
+                    <next>
+                        <step id="2" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="2" title="Send Text Message" description="The useer sends text message to actor receiver" type="activity" component="" platform="CHT" name="Chat" layer="Middleware" superlayer="">
+                    <next>
+                        <step id="3" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="3" title="Incoming Text Message" description="It raises an event: Incoming Text message" type="activity" component="" platform="CHT" name="Chat" layer="Middleware" superlayer="">
+                    <next>
+                        <step id="4" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="4" title="Incoming Message in Database" description="The incoming message will persist in the Database. It raises an event with the incoming message information" type="end" component="" platform="CHT" name="Chat" layer="Meddleware" superlayer=""></step>
+            </steps>
+        </process>
+        <process platform="CHT" name="Message Seen" description="A 'Seen Message' log will appear on screen once the message has been read" previous="">
+            <steps>
+                <step id="0" title="Press Contact Chat" description="The user will press onthe 'Contact Chat' button" type="start" component="" platform="CHT" name="Chat" layer="Sub App" superlayer="">
+                    <next>
+                        <step id="1" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="1" title="Validate Read Message" description="It will validate if the message has been read" type="activity" component="" platform="CHT" name="Chat" layer="Middleware" superlayer="">
+                    <next>
+                        <step id="2" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="2" title="Update Database" description="The Database will be uptadted" type="activity" component="" platform="CHT" name="Chat" layer="Middleware" superlayer="">
+                    <next>
+                        <step id="3" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="3" title="Send Notification to Actor Receiver" description="A notification to the actor received will be sent" type="activity" component="" platform="CHT" name="Chat" layer="Middleware" superlayer="">
+                    <next>
+                        <step id="4" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="4" title="Update Database Message Status" description="It will be update the message status in the database" type="activity" component="" platform="CHT" name="Chat" layer="Middleware" superlayer="">
+                    <next>
+                        <step id="5" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="5" title="Check if User has the Screen Opened" description="It will raise an event for the user has the screen opened" type="activity" component="" platform="CHT" name="Chat" layer="Sub App" superlayer="">
+                    <next>
+                        <step id="6" type="direct call"></step>
+                    </next>
+                </step>
+                <step id="6" title="Show second tick" description="The second tick will be shown" type="end" component="" platform="CHT" name="Chat" layer="Sub App" superlayer=""></step>
+            </steps>
+        </process>
         <process platform="DAP" name="Asset Transmission" description="Describes the process of transmitting an asset from and to an specific actor. The process involves delivering metadata, crypto transactions and statistics." previous="">
             <steps>
                 <step id="0" type="start" title="Device A. Process Start" description="User selects Transmission operation to execute. Valids are: Asset Transfer \b Asset Redemption \b Asset Distribution." platform="DAP" superlayer="" layer="Wallet Module" name="Asset User">
