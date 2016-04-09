@@ -33,16 +33,13 @@ public class ChatIdentitySubAppModulePluginRoot extends AbstractPlugin implement
 
     private ChatIdentityModuleManager chatIdentityModuleManager;
 
-    @NeededPluginReference(platform = Platforms.CHAT_PLATFORM, layer = Layers.IDENTITY, plugin = Plugins.CHAT_IDENTITY)
-    private  ChatIdentityManager identityManager;
-
     @NeededAddonReference(platform = Platforms.PLUG_INS_PLATFORM, layer = Layers.PLATFORM_SERVICE, addon = Addons.ERROR_MANAGER)
     private ErrorManager errorManager;
 
     @NeededAddonReference(platform = Platforms.OPERATIVE_SYSTEM_API, layer = Layers.SYSTEM, addon = Addons.PLUGIN_FILE_SYSTEM)
     private PluginFileSystem pluginFileSystem;
 
-    @NeededPluginReference(platform = Platforms.CHAT_PLATFORM, layer = Layers.IDENTITY, plugin = Plugins.CHAT_IDENTITY)
+    @NeededPluginReference(platform = Platforms.CHAT_PLATFORM, layer = Layers.IDENTITY, plugin = Plugins.CHAT_IDENTITY_SUP_APP_MODULE)
     private ChatIdentityManager chatIdentityManager;
 
     public ChatIdentitySubAppModulePluginRoot() {
@@ -88,7 +85,9 @@ public class ChatIdentitySubAppModulePluginRoot extends AbstractPlugin implement
     @Override
     public void start(){
         /**
+         *
          * Init the plugin manager
+         *
          */
         System.out.println("******* Init Chat Sup App Module Identity ******");
         chatIdentityModuleManager = new com.fermat_cht_plugin.layer.sub_app_module.chat.identity.bitdubai.version_1.structure.ChatIdentitySupAppModuleManager(chatIdentityManager);
