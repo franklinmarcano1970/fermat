@@ -124,15 +124,18 @@ public class cht_dialog_yes_no extends FermatDialog  implements View.OnClickList
     protected int setLayoutId() {
         return R.layout.cht_alert_dialog_yes_no;
     }
+
     public boolean getStatusAddContact(){ return addcontact; }
 
     private void setUpListeners() {
         btn_yes.setOnClickListener(this);
         btn_no.setOnClickListener(this);
     }
+
     public boolean getStatusDeleteContact(){
         return delete_contact;
     }
+
     public boolean getStatusDeleteChat(){
         return delete_chat;
     }
@@ -160,11 +163,11 @@ public class cht_dialog_yes_no extends FermatDialog  implements View.OnClickList
                         Toast.makeText(getActivity(), "Contact added", Toast.LENGTH_SHORT).show();
                         //changeActivity(Activities.CHT_CHAT_OPEN_CONTACTLIST, appSession.getAppPublicKey());
                         //dismiss();
-                    } else {
+                    }
+                    else {
                         Toast.makeText(getActivity(), "Contact already exist", Toast.LENGTH_SHORT).show();
-
-                        //changeActivity(Activities.CHT_CHAT_OPEN_CONTACTLIST, appSession.getAppPublicKey());
-                        //dismiss();
+//                        //changeActivity(Activities.CHT_CHAT_OPEN_CONTACTLIST, appSession.getAppPublicKey());
+//                        //dismiss();
                     }
                     dismiss();
                     mAdapterCallback.onMethodCallbackContacts();//solution to access to update contacts. j

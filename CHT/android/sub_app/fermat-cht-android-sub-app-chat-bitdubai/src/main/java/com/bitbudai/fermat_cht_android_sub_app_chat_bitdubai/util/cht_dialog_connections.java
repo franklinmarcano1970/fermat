@@ -201,27 +201,39 @@ public class cht_dialog_connections extends FermatDialog<FermatSession, SubAppRe
                                             }
                                         } else {
                                             final int pos = position;
-                                            final ContactConnection contactConn = chatManager.getContactConnectionByContactId(contactid.get(pos));
-
-                                            if (contactConn.getRemoteName() != null) {
-                                                final cht_dialog_yes_no customAlert = new cht_dialog_yes_no(getActivity(), getSession(), null, contactConn, mAdapterCallback);
-                                                customAlert.setTextBody("Do you want to add " + contactConn.getRemoteName() + " to your Contact List?");
-                                                customAlert.setTextTitle("Add connections");
-                                                customAlert.setType("add-connections");
-                                                customAlert.show();
-                                                customAlert.setOnDismissListener(new OnDismissListener() {
-                                                    @Override
-                                                    public void onDismiss(DialogInterface dialog) {
-                                                        if (customAlert.getStatusAddContact() == true) {
-                                                            act_vista = true;
+                                            if(pos >= 0) {
+                                                final ContactConnection contactConn = chatManager.getContactConnectionByContactId(contactid.get(pos));
+                                                if (contactConn != null) {
+                                                    //if (chatManager.getContactByLocalPublicKey(contactConn.getRemoteActorPublicKey()) == null) {
+                                                        if (contactConn.getRemoteName() != null) {
+                                                            final cht_dialog_yes_no customAlert = new cht_dialog_yes_no(getActivity(), getSession(), null, contactConn, mAdapterCallback);
+                                                            customAlert.setTextBody("Do you want to add " + contactConn.getRemoteName() + " to your Contact List?");
+                                                            customAlert.setTextTitle("Add connections");
+                                                            customAlert.setType("add-connections");
+                                                            customAlert.show();
+                                                            customAlert.setOnDismissListener(new OnDismissListener() {
+                                                                @Override
+                                                                public void onDismiss(DialogInterface dialog) {
+                                                                    if (customAlert.getStatusAddContact() == true) {
+                                                                        act_vista = true;
+                                                                    }
+                                                                }
+                                                            });
+                                                        } else {
+                                                            dismiss();
+                                                            Log.i("CHT add contacts", "null name connection");
                                                         }
-                                                    }
-                                                });
-
-                                            } else {
+//                                                    } else {
+//                                                        Toast.makeText(getActivity(), "Contact already exist", Toast.LENGTH_SHORT).show();
+//                                                        dismiss();
+//                                                    }
+                                                } else {
+                                                    dismiss();
+                                                    Log.i("CHT add contacts", "null connection");
+                                                }
+                                            }else{
                                                 dismiss();
-                                                //changeActivity(Activities.CHT_CHAT_OPEN_CONTACTLIST, appSession.getAppPublicKey());
-
+                                                Log.i("CHT add contacts", "connection position null");
                                             }
                                         }
                                     } catch (CantSaveChatException e) {
