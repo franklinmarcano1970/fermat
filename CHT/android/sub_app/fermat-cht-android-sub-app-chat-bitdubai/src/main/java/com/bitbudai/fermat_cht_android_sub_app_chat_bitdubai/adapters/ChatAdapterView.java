@@ -30,6 +30,7 @@ import com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.sessions.ChatSessio
 import com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.util.ConstantSubtitle;
 import com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.util.Utils;
 import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.FermatSession;
+import com.bitdubai.fermat_android_api.ui.util.FermatWorker;
 import com.bitdubai.fermat_api.layer.all_definition.components.enums.PlatformComponentType;
 import com.bitdubai.fermat_api.layer.dmp_engine.sub_app_runtime.enums.SubApps;
 import com.bitdubai.fermat_cht_android_sub_app_chat_bitdubai.R;
@@ -41,6 +42,7 @@ import com.bitdubai.fermat_cht_api.all_definition.exceptions.CHTException;
 import com.bitdubai.fermat_cht_api.all_definition.exceptions.CantGetChatException;
 import com.bitdubai.fermat_cht_api.all_definition.exceptions.CantGetMessageException;
 import com.bitdubai.fermat_cht_api.all_definition.exceptions.CantGetNetworkServicePublicKeyException;
+import com.bitdubai.fermat_cht_api.all_definition.exceptions.CantGetOnlineStatus;
 import com.bitdubai.fermat_cht_api.all_definition.exceptions.CantGetWritingStatus;
 import com.bitdubai.fermat_cht_api.all_definition.exceptions.CantSaveChatException;
 import com.bitdubai.fermat_cht_api.all_definition.exceptions.CantSaveMessageException;
@@ -104,6 +106,7 @@ public class ChatAdapterView extends LinearLayout {
     private boolean chatWasCreate = false;
     private Calendar today;
     UUID newChatId;
+    Boolean isOnline = false;
     Boolean textNeverChange = false;
     static final int TIME_TO_REFRESH_TOOLBAR = 6000;
     public ChatAdapterView(Context context, ArrayList<ChatMessage> chatHistory,
@@ -122,7 +125,7 @@ public class ChatAdapterView extends LinearLayout {
         this.chatSettings = chatSettings;
         //this.background=background;
         initControls();
-        ChangeStatusOnTheSubtitleBar(ConstantSubtitle.IS_ONLINE);
+
     }
 
     public ChatAdapterView(Context context, AttributeSet attrs) {
@@ -149,6 +152,7 @@ public class ChatAdapterView extends LinearLayout {
                 contactIcon = bmd.getBitmap();
                 leftName = contact.getAlias();
                 Chat cht = chatManager.getChatByRemotePublicKey(remotePk);
+
                 if (cht != null)
                     chatId = cht.getChatId();
                 else chatId = null;
@@ -237,7 +241,7 @@ public class ChatAdapterView extends LinearLayout {
                 }
                 adapter = new ChatAdapter(this.getContext(), (chatHistory != null) ? chatHistory : new ArrayList<ChatMessage>());
                 messagesContainer.setAdapter(adapter);
-                checkStatusWriting();
+
 
 
             }
@@ -272,6 +276,35 @@ public class ChatAdapterView extends LinearLayout {
             return null;
         }
     }
+    public class BackgroundAsyncTaskOnline extends
+            AsyncTask<Void, Integer, Boolean> {
+
+        int myProgress;
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            try {
+                try {
+                    return chatManager.checkOnlineStatus(remotePk);
+                } catch (CHTException e) {
+                    e.printStackTrace();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+
+        @Override
+        protected void onPostExecute(Boolean x) {
+            if (x != null) {
+               isOnline = x;
+            }
+        }
+    }
+
+
 
     public class BackgroundAsyncTask extends
             AsyncTask<Message, Integer, Message> {
@@ -338,7 +371,6 @@ public class ChatAdapterView extends LinearLayout {
         rootView.getWindowVisibleDisplayFrame(r);
         DisplayMetrics dm = rootView.getResources().getDisplayMetrics();
         int heightDiff = rootView.getBottom() - r.bottom;
-        // Threshold size: dp to pixels, multiply with display density
         boolean isKeyboardShown = heightDiff > SOFT_KEYBOARD_HEIGHT_DP_THRESHOLD * dm.density;
         return isKeyboardShown;
     }
@@ -354,7 +386,7 @@ public class ChatAdapterView extends LinearLayout {
 
             case ConstantSubtitle.IS_WRITING:
                 // toolbar.setSubtitleTextColor(Color.parseColor("#fff"));
-                toolbar.setSubtitle("Writing..");
+                toolbar.setSubtitle("Typing..");
                 break;
         }
     }
@@ -364,9 +396,6 @@ public class ChatAdapterView extends LinearLayout {
         messagesContainer.setLayoutManager(new LinearLayoutManager(this.getContext(), LinearLayoutManager.VERTICAL, false));
         messageET = (EditText) findViewById(R.id.messageEdit);
         sendBtn = (Button) findViewById(R.id.chatSendButton);
-
-
-
         messageET.getViewTreeObserver().addOnGlobalLayoutListener(
                 new ViewTreeObserver.OnGlobalLayoutListener() {
                     @Override
@@ -378,7 +407,7 @@ public class ChatAdapterView extends LinearLayout {
                         }
                     }
                 });
-
+            checkStatus();
         messageET.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {
@@ -386,13 +415,23 @@ public class ChatAdapterView extends LinearLayout {
 
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
+                int i = 0;
                 if (chatWasCreate) {
+                    i++;
+                    if(i == 5){
+                        BackgroundAsyncTaskWriting batw = new BackgroundAsyncTaskWriting();
+                        batw.execute();
+                        i = 0;
+                    }
                     if (messageET.length() > 0 && textNeverChange == false) {
                         BackgroundAsyncTaskWriting batw = new BackgroundAsyncTaskWriting();
                         batw.execute();
                         textNeverChange = true;
                     }else if(messageET.length() == 0 && textNeverChange == true){
                         textNeverChange = false;
+                        BackgroundAsyncTaskWriting batw = new BackgroundAsyncTaskWriting();
+                        batw.execute();
+                        i = 0;
                     }
                 }
             }
@@ -620,17 +659,32 @@ public class ChatAdapterView extends LinearLayout {
         scroll();
     }
 
-    public void checkStatusWriting(){
+    public void checkStatus(){
         try {
-            if (chatManager.checkWritingStatus(chatId)) {
-                ChangeStatusOnTheSubtitleBar(ConstantSubtitle.IS_WRITING);
-            }else {
-                ChangeStatusOnTheSubtitleBar(ConstantSubtitle.IS_ONLINE);
-            }
+           if(chatWasCreate) {
+               if (chatManager.checkWritingStatus(chatId)) {
+                   ChangeStatusOnTheSubtitleBar(ConstantSubtitle.IS_WRITING);
+               } else {
+                   BackgroundAsyncTaskOnline backAto = new BackgroundAsyncTaskOnline();
+                   backAto.execute();
+                   if (isOnline) {
+                       ChangeStatusOnTheSubtitleBar(ConstantSubtitle.IS_ONLINE);
+                   } else {
+                       ChangeStatusOnTheSubtitleBar(ConstantSubtitle.IS_OFFLINE);
+                   }
+               }
+           }else{
+               BackgroundAsyncTaskOnline backAto = new BackgroundAsyncTaskOnline();
+               backAto.execute();
+               if (isOnline) {
+                   ChangeStatusOnTheSubtitleBar(ConstantSubtitle.IS_ONLINE);
+               }else {
+                   ChangeStatusOnTheSubtitleBar(ConstantSubtitle.IS_OFFLINE);
+               }
+           }
         } catch (CantGetWritingStatus cantGetWritingStatus) {
             cantGetWritingStatus.printStackTrace();
         }
-
     }
 
     private void scroll() {
