@@ -38,6 +38,7 @@ import com.bitdubai.fermat_cht_api.all_definition.exceptions.CantInitializeDatab
 import com.bitdubai.fermat_cht_api.all_definition.exceptions.CantSetObjectException;
 import com.bitdubai.fermat_cht_api.all_definition.exceptions.CantStartServiceException;
 import com.bitdubai.fermat_cht_api.layer.actor_connection.interfaces.ChatActorConnectionManager;
+import com.bitdubai.fermat_cht_api.layer.actor_network_service.interfaces.ChatManager;
 import com.bitdubai.fermat_cht_api.layer.middleware.interfaces.Chat;
 import com.bitdubai.fermat_cht_api.layer.middleware.interfaces.Message;
 import com.bitdubai.fermat_cht_api.layer.middleware.mocks.ChatMock;
@@ -74,6 +75,9 @@ public class ChatMiddlewarePluginRoot extends AbstractPlugin implements
         DatabaseManagerForDevelopers,
         LogManagerForDevelopers {
 
+    @NeededAddonReference(platform = Platforms.PLUG_INS_PLATFORM, layer = Layers.PLATFORM_SERVICE, addon = Addons.ERROR_MANAGER)
+    ErrorManager errorManager;
+
     @NeededAddonReference(platform = Platforms.PLUG_INS_PLATFORM, layer = Layers.PLATFORM_SERVICE, addon = Addons.EVENT_MANAGER)
     private EventManager eventManager;
 
@@ -94,6 +98,9 @@ public class ChatMiddlewarePluginRoot extends AbstractPlugin implements
 
     @NeededPluginReference(platform = Platforms.CHAT_PLATFORM, layer = Layers.ACTOR_CONNECTION, plugin = Plugins.CHAT_ACTOR_CONNECTION)
     private ChatActorConnectionManager chatActorConnectionManager;
+
+    @NeededPluginReference(platform = Platforms.CHAT_PLATFORM, layer = Layers.ACTOR_NETWORK_SERVICE, plugin = Plugins.CHAT_ACTOR_NETWORK_SERVICE)
+    private ChatManager chatActorNetworkService;
 
     @NeededAddonReference(platform = Platforms.OPERATIVE_SYSTEM_API, layer = Layers.SYSTEM, addon = Addons.PLUGIN_BROADCASTER_SYSTEM)
     Broadcaster broadcaster;
@@ -141,7 +148,9 @@ public class ChatMiddlewarePluginRoot extends AbstractPlugin implements
             /*
              * The database exists but cannot be open. I can not handle this situation.
              */
-            reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN,
+            errorManager.reportUnexpectedPluginException(
+                    Plugins.CHAT_MIDDLEWARE,
+                    UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN,
                     cantOpenDatabaseException);
 //            errorManager.reportUnexpectedPluginException(
 //                    Plugins.CHAT_MIDDLEWARE,
@@ -223,6 +232,44 @@ public class ChatMiddlewarePluginRoot extends AbstractPlugin implements
 
     ServiceStatus serviceStatus = ServiceStatus.CREATED;
 
+    /**
+     * This method initializes the contact factory.
+     */
+    private void initializeContactFactory() throws CantGetCompatiblesActorNetworkServiceListException {
+//TODO:Eliminar
+//        //Configure platforms
+//        HashMap<String, Object> actorNetworkServiceMap=new HashMap<>();
+//        //Include DAP Platform
+//        List dapPlatformManagers=new ArrayList();
+//        dapPlatformManagers.add(assetUserActorNetworkServiceManager);
+//        dapPlatformManagers.add(assetIssuerActorNetworkServiceManager);
+//        dapPlatformManagers.add(assetRedeemPointActorNetworkServiceManager);
+//        actorNetworkServiceMap.put(
+//                Platforms.DIGITAL_ASSET_PLATFORM.getCode(),
+//                dapPlatformManagers);
+//        //Include CCP actors
+//        actorNetworkServiceMap.put(
+//                Platforms.CRYPTO_CURRENCY_PLATFORM.getCode(),
+//                intraUserModuleManager);
+//        //Include CBP Platform
+//        List cbpPlatformManagers=new ArrayList();
+//        cbpPlatformManagers.add(cryptoBrokerCommunitySubAppModuleManager.getCryptoBrokerSearch());
+//        cbpPlatformManagers.add(cryptoCustomerCommunitySubAppModuleManager.getCryptoCustomerSearch());
+//        actorNetworkServiceMap.put(
+//                Platforms.CRYPTO_BROKER_PLATFORM.getCode(),
+//                cbpPlatformManagers);
+//        this.chatMiddlewareContactFactory =
+//                new ChatMiddlewareContactFactory(
+//                        actorNetworkServiceMap,
+//                        errorManager);
+//        //To discover the own DAP Asset User identity.
+//        this.chatMiddlewareContactFactory.setActorAssetUserManager(actorAssetUserManager);
+//        this.chatMiddlewareContactFactory.setActorAssetIssuerManager(actorAssetIssuerManager);
+//        this.chatMiddlewareContactFactory.setActorAssetRedeemPointManager(actorAssetRedeemPointManager);
+//        this.chatMiddlewareContactFactory.setCryptoBrokerIdentityManager(cryptoBrokerIdentityManager);
+//        this.chatMiddlewareContactFactory.setCryptoCustomerIdentityManager(cryptoCustomerIdentityManager);
+    }
+
     @Override
     public void start() throws CantStartPluginException {
         try {
@@ -289,7 +336,8 @@ public class ChatMiddlewarePluginRoot extends AbstractPlugin implements
                     chatMiddlewareManager,
                     broadcaster,
                     pluginFileSystem,
-                    chatActorConnectionManager);
+                    chatActorConnectionManager,
+                    chatActorNetworkService);
             openContractMonitorAgent.start();
 
             /**
