@@ -513,7 +513,7 @@ public class ChatMiddlewareMonitorAgent implements
                 actionOnline.setValue(isOnline);
                 System.out.println("12345 is online " + isOnline);
                 if(!isOnline){
-                    DateFormat df = new SimpleDateFormat("MM/dd/yyyy");
+                    DateFormat df = new SimpleDateFormat("MM/dd/yyyy HH:mm");
                     Date today = Calendar.getInstance().getTime();
                     actionOnline.setLastConnection(df.format(today));
                 }
@@ -613,7 +613,7 @@ public class ChatMiddlewareMonitorAgent implements
 
         for(ActionOnline actionOnline : actionOnlines){
             actionOnline.setValue(false);
-            DateFormat df = new SimpleDateFormat("MM/dd/yyyy");
+            DateFormat df = new SimpleDateFormat("MM/dd/yyyy HH:mm");
             Date today = Calendar.getInstance().getTime();
             actionOnline.setLastConnection(df.format(today));
             chatMiddlewareDatabaseDao.saveOnlineAction(actionOnline);
