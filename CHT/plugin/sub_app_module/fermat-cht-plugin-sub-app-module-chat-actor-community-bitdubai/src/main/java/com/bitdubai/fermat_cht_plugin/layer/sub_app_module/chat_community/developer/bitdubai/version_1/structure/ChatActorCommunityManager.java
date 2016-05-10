@@ -12,7 +12,6 @@ import com.bitdubai.fermat_api.layer.actor_connection.common.exceptions.Connecti
 import com.bitdubai.fermat_api.layer.actor_connection.common.exceptions.UnexpectedConnectionStateException;
 import com.bitdubai.fermat_api.layer.actor_connection.common.exceptions.UnsupportedActorTypeException;
 import com.bitdubai.fermat_api.layer.actor_connection.common.structure_common_classes.ActorIdentityInformation;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.utils.PluginVersionReference;
 import com.bitdubai.fermat_api.layer.all_definition.enums.Actors;
 
@@ -55,9 +54,9 @@ import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.chat_actor_co
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.chat_actor_community.interfaces.ChatActorCommunitySelectableIdentity;
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.chat_actor_community.interfaces.ChatActorCommunitySubAppModuleManager;
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.chat_actor_community.settings.ChatActorCommunitySettings;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 import com.bitdubai.fermat_cht_plugin.layer.sub_app_module.chat_community.developer.bitdubai.version_1.ChatActorCommunitySubAppModulePluginRoot;
-
-
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -105,14 +104,12 @@ public class ChatActorCommunityManager implements ChatActorCommunitySubAppModule
         }
 
         try{
-            if(selectableIdentity!=null) {
-                final ChatLinkedActorIdentity linkedChatActorIdentity = new ChatLinkedActorIdentity(selectableIdentity.getPublicKey(), selectableIdentity.getActorType());
-                final ChatActorConnectionSearch search = chatActorConnectionManager.getSearch(linkedChatActorIdentity);
+            final ChatLinkedActorIdentity linkedChatActorIdentity = new ChatLinkedActorIdentity(selectableIdentity.getPublicKey(), selectableIdentity.getActorType());
+            final ChatActorConnectionSearch search = chatActorConnectionManager.getSearch(linkedChatActorIdentity);
 
-                actorConnections = search.getResult(Integer.MAX_VALUE, 0);
-            }//else linkedChatActorIdentity=null;
+            actorConnections = search.getResult(Integer.MAX_VALUE, 0);
         } catch (CantListActorConnectionsException exception) {
-            chatActorCommunitySubAppModulePluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN,exception);
+            chatActorCommunitySubAppModulePluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, exception);
         }
 
         ChatActorCommunityInformation worldActor;
@@ -288,23 +285,24 @@ public class ChatActorCommunityManager implements ChatActorCommunitySubAppModule
     public List<ChatActorCommunityInformation> listAllConnectedChatActor(ChatActorCommunitySelectableIdentity selectedIdentity, int max, int offset) throws CantListChatActorException {
         List<ChatActorCommunityInformation> chatActorCommunityInformationList = null;
         try{
-            if(selectedIdentity!=null) {
-                final ChatLinkedActorIdentity linkedChatActor = new ChatLinkedActorIdentity(
-                        selectedIdentity.getPublicKey(),
-                        selectedIdentity.getActorType()
-                );
+            final ChatLinkedActorIdentity linkedChatActor = new ChatLinkedActorIdentity(
+                    selectedIdentity.getPublicKey(),
+                    selectedIdentity.getActorType()
+            );
 
-                final ChatActorConnectionSearch search = chatActorConnectionManager.getSearch(linkedChatActor);
+            final ChatActorConnectionSearch search = chatActorConnectionManager.getSearch(linkedChatActor);
 
-                search.addConnectionState(ConnectionState.CONNECTED);
+            search.addConnectionState(ConnectionState.CONNECTED);
 
-                final List<ChatActorConnection> actorConnections = search.getResult(max, offset);
+            final List<ChatActorConnection> actorConnections = search.getResult(max, offset);
 
-                chatActorCommunityInformationList = new ArrayList<>();
+            chatActorCommunityInformationList = new ArrayList<>();
 
-                for (ChatActorConnection cac : actorConnections)
-                    chatActorCommunityInformationList.add(new ChatActorCommunitySubAppModuleInformationImpl(cac));
-            }
+            for (ChatActorConnection cac : actorConnections)
+                chatActorCommunityInformationList.add(new ChatActorCommunitySubAppModuleInformationImpl(cac));
+
+
+
         } catch (CantListActorConnectionsException e) {
             chatActorCommunitySubAppModulePluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, FermatException.wrapException(e));
         }
@@ -318,25 +316,23 @@ public class ChatActorCommunityManager implements ChatActorCommunitySubAppModule
 
         List<ChatActorCommunityInformation> chatActorCommunityInformationList = null;
         try {
-            if (selectedIdentity != null) {
-                final ChatLinkedActorIdentity linkedChatActor = new ChatLinkedActorIdentity(
-                        selectedIdentity.getPublicKey(),
-                        selectedIdentity.getActorType()
-                );
+            final ChatLinkedActorIdentity linkedChatActor = new ChatLinkedActorIdentity(
+                    selectedIdentity.getPublicKey(),
+                    selectedIdentity.getActorType()
+            );
 
-                final ChatActorConnectionSearch search = chatActorConnectionManager.getSearch(linkedChatActor);
+            final ChatActorConnectionSearch search = chatActorConnectionManager.getSearch(linkedChatActor);
 
-                search.addConnectionState(ConnectionState.PENDING_LOCALLY_ACCEPTANCE);
+            search.addConnectionState(ConnectionState.PENDING_LOCALLY_ACCEPTANCE);
 
-                final List<ChatActorConnection> actorConnections = search.getResult(max, offset);
+            final List<ChatActorConnection> actorConnections = search.getResult(max, offset);
 
-                chatActorCommunityInformationList = new ArrayList<>();
+            chatActorCommunityInformationList = new ArrayList<>();
 
-                for (ChatActorConnection cac : actorConnections)
-                    chatActorCommunityInformationList.add(new ChatActorCommunitySubAppModuleInformationImpl(cac));
-
-            }
+            for (ChatActorConnection cac : actorConnections)
+                chatActorCommunityInformationList.add(new ChatActorCommunitySubAppModuleInformationImpl(cac));
         }
+
         catch(CantListActorConnectionsException e){
             chatActorCommunitySubAppModulePluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, FermatException.wrapException(e));
         }
@@ -354,23 +350,21 @@ public class ChatActorCommunityManager implements ChatActorCommunitySubAppModule
     public List<ChatActorCommunityInformation> listChatActorPendingRemoteAction(ChatActorCommunitySelectableIdentity selectedIdentity, int max, int offset) throws CantListChatActorException {
         List<ChatActorCommunityInformation> chatActorCommunityInformationList = null;
         try {
-            if (selectedIdentity != null) {
-                final ChatLinkedActorIdentity linkedChatActor = new ChatLinkedActorIdentity(
-                        selectedIdentity.getPublicKey(),
-                        selectedIdentity.getActorType()
-                );
+            final ChatLinkedActorIdentity linkedChatActor = new ChatLinkedActorIdentity(
+                    selectedIdentity.getPublicKey(),
+                    selectedIdentity.getActorType()
+            );
 
-                final ChatActorConnectionSearch search = chatActorConnectionManager.getSearch(linkedChatActor);
+            final ChatActorConnectionSearch search = chatActorConnectionManager.getSearch(linkedChatActor);
 
-                search.addConnectionState(ConnectionState.PENDING_REMOTELY_ACCEPTANCE);
+            search.addConnectionState(ConnectionState.PENDING_REMOTELY_ACCEPTANCE);
 
-                final List<ChatActorConnection> actorConnections = search.getResult(max, offset);
+            final List<ChatActorConnection> actorConnections = search.getResult(max, offset);
 
-                chatActorCommunityInformationList = new ArrayList<>();
+            chatActorCommunityInformationList = new ArrayList<>();
 
-                for (ChatActorConnection cac : actorConnections)
-                    chatActorCommunityInformationList.add(new ChatActorCommunitySubAppModuleInformationImpl(cac));
-            }
+            for (ChatActorConnection cac : actorConnections)
+                chatActorCommunityInformationList.add(new ChatActorCommunitySubAppModuleInformationImpl(cac));
         } catch(CantListActorConnectionsException e){
             chatActorCommunitySubAppModulePluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, FermatException.wrapException(e));
         }
@@ -468,8 +462,7 @@ public class ChatActorCommunityManager implements ChatActorCommunitySubAppModule
                 appSettings.setLastSelectedActorType(IdentitiesInDevice.get(0).getActorType());
             }
         } catch(CantListChatIdentityException e) {
-            chatActorCommunitySubAppModulePluginRoot.reportError(
-                    UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, FermatException.wrapException(e));
+            chatActorCommunitySubAppModulePluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, FermatException.wrapException(e));
             /*Do nothing*/
         }
 
