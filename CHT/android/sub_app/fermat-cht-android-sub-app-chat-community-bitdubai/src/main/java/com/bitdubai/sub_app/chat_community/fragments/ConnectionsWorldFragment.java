@@ -5,10 +5,12 @@ import android.content.DialogInterface;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SearchView;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
@@ -335,7 +337,7 @@ public class ConnectionsWorldFragment
             dataSet.addAll(result);
             offset = dataSet.size();
         } catch (Exception e) {
-            //e.printStackTrace();
+            e.printStackTrace();
         }
         return dataSet;
     }
