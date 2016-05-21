@@ -41,7 +41,6 @@ import com.bitbudai.fermat_cht_android_sub_app_chat_identity_bitdubai.util.Commo
 import com.bitbudai.fermat_cht_android_sub_app_chat_identity_bitdubai.util.CreateChatIdentityExecutor;
 import static com.bitbudai.fermat_cht_android_sub_app_chat_identity_bitdubai.util.CreateChatIdentityExecutor.SUCCESS;
 
-import com.bitbudai.fermat_cht_android_sub_app_chat_identity_bitdubai.util.DialogCropImage;
 import com.bitbudai.fermat_cht_android_sub_app_chat_identity_bitdubai.util.DialogSelectCamOrPic;
 import com.bitbudai.fermat_cht_android_sub_app_chat_identity_bitdubai.util.EditIdentityExecutor;
 import static com.bitbudai.fermat_cht_android_sub_app_chat_identity_bitdubai.util.MenuConstants.MENU_ADD_ACTION;
@@ -116,15 +115,16 @@ public class CreateChatIdentityFragment extends AbstractFermatFragment {
 
             chatIdentitySettings = null;
             try {
-                chatIdentitySettings = moduleManager.getSettingsManager().loadAndGetSettings(appSession.getAppPublicKey());
-            }catch(Exception e){
+                chatIdentitySettings = moduleManager.loadAndGetSettings(appSession.getAppPublicKey());
+            } catch (Exception e) {
                 chatIdentitySettings = null;
             }
+
             if (chatIdentitySettings == null) {
                 chatIdentitySettings = new ChatIdentityPreferenceSettings();
                 chatIdentitySettings.setIsPresentationHelpEnabled(true);
                 try {
-                    moduleManager.getSettingsManager().persistSettings(appSession.getAppPublicKey(), chatIdentitySettings);
+                    moduleManager.persistSettings(appSession.getAppPublicKey(), chatIdentitySettings);
                 } catch (Exception e) {
                     errorManager.reportUnexpectedSubAppException(SubApps.CHT_CHAT, UnexpectedSubAppExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
                 }
@@ -161,7 +161,7 @@ public class CreateChatIdentityFragment extends AbstractFermatFragment {
         placeholdImg = (ImageView) layout.findViewById(R.id.placeholdImg);
         Bitmap bitmap = null;
 
-        if (chatIdentitySettings.isHomeTutorialDialogEnabled())
+        if (chatIdentitySettings.isHomeTutorialDialogEnabled() == true)
         {
             setUpDialog();
         }
@@ -319,63 +319,17 @@ public class CreateChatIdentityFragment extends AbstractFermatFragment {
                 case REQUEST_IMAGE_CAPTURE:
                     Bundle extras = data.getExtras();
                     cryptoBrokerBitmap = (Bitmap) extras.get("data");
-                    try {
-                        if (cryptoBrokerBitmap.getWidth() >= 192 && cryptoBrokerBitmap.getHeight() >= 192) {
-                            cryptoBrokerBitmap = ImagesUtils.cropImage(cryptoBrokerBitmap);
-                            final DialogCropImage dialogCropImage = new DialogCropImage(getActivity(), appSession, null, cryptoBrokerBitmap);
-                            dialogCropImage.show();
-                            dialogCropImage.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                @Override
-                                public void onDismiss(DialogInterface dialog) {
-                                    if (dialogCropImage.getCroppedImage() != null) {
-                                        cryptoBrokerBitmap = dialogCropImage.getCroppedImage();
-                                        Picasso.with(getActivity()).load(getImageUri(getActivity(), dialogCropImage.getCroppedImage())).transform(new CircleTransform()).into(mBrokerImage);
-                                    } else {
-                                        cryptoBrokerBitmap = null;
-                                    }
-                                }
-                            });
-                        } else {
-                            Toast.makeText(getActivity(), "The image selected is too small. Please select \n a photo with height and width of at least 192x192", Toast.LENGTH_LONG).show();
-                            cryptoBrokerBitmap = null;
-                            //Toast.makeText(getActivity(), "", Toast.LENGTH_SHORT).show();
-                        }
-                    }catch(Exception e){
-                        errorManager.reportUnexpectedUIException(UISource.ACTIVITY, UnexpectedUIExceptionSeverity.UNSTABLE, FermatException.wrapException(e));
-
-                    }
-
+                    Picasso.with(getActivity()).load(getImageUri(getActivity(),cryptoBrokerBitmap)).transform(new CircleTransform()).into(mBrokerImage);
                     break;
                 case REQUEST_LOAD_IMAGE:
-                     Uri selectedImage = data.getData();
-
+                    Uri selectedImage = data.getData();
                     try {
                         if (isAttached) {
                             ContentResolver contentResolver = getActivity().getContentResolver();
                             cryptoBrokerBitmap = MediaStore.Images.Media.getBitmap(contentResolver, selectedImage);
-
+                            cryptoBrokerBitmap = ImagesUtils.cropImage(cryptoBrokerBitmap);
                             //cryptoBrokerBitmap = Bitmap.createScaledBitmap(cryptoBrokerBitmap, mBrokerImage.getWidth(), mBrokerImage.getHeight(), true);
-                            if(cryptoBrokerBitmap.getWidth() >= 192 && cryptoBrokerBitmap.getHeight() >= 192) {
-                                cryptoBrokerBitmap = ImagesUtils.cropImage(cryptoBrokerBitmap);
-                                final DialogCropImage dialogCropImagee = new DialogCropImage(getActivity(), appSession, null, cryptoBrokerBitmap);
-                                dialogCropImagee.show();
-                                dialogCropImagee.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                                    @Override
-                                    public void onDismiss(DialogInterface dialog) {
-                                        if (dialogCropImagee.getCroppedImage() != null) {
-                                            cryptoBrokerBitmap = dialogCropImagee.getCroppedImage();
-                                            Picasso.with(getActivity()).load(getImageUri(getActivity(), dialogCropImagee.getCroppedImage())).transform(new CircleTransform()).into(mBrokerImage);
-                                        } else {
-                                            cryptoBrokerBitmap = null;
-                                        }
-                                    }
-                                });
-                            }else{
-                                Toast.makeText(getActivity(), "The image selected is too small. Please select \n a photo with height and width of at least 192x192", Toast.LENGTH_LONG).show();
-                                cryptoBrokerBitmap = null;
-                               // Toast.makeText(getActivity(), "The image selected is too small", Toast.LENGTH_SHORT).show();
-                            }
-
+                            Picasso.with(getActivity()).load(selectedImage).transform(new CircleTransform()).into(mBrokerImage);
                         }
                     } catch (Exception e) {
                         errorManager.reportUnexpectedUIException(UISource.ACTIVITY, UnexpectedUIExceptionSeverity.UNSTABLE, FermatException.wrapException(e));
