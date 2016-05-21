@@ -93,12 +93,11 @@ public class ActorConnectionManager implements ChatActorConnectionManager {
 //            else
 
             ChatActorConnection oldActorConnection = dao.chatActorConnectionExists(linkedIdentity, actorReceiving.getPublicKey());
-            if(oldActorConnection != null) {
-                if (!oldActorConnection.getConnectionState().equals(ConnectionState.CONNECTED))
-                    connectionState = ConnectionState.CONNECTED;
-                else connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+            if(!oldActorConnection.getConnectionState().equals(ConnectionState.CONNECTED))
+                connectionState = ConnectionState.CONNECTED;
+            else connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
 
-            }else connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+
             final long currentTime = System.currentTimeMillis();
 
             final ChatActorConnection actorConnection = new ChatActorConnection(
