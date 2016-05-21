@@ -83,13 +83,13 @@ public class ActorConnectionManager implements ChatActorConnectionManager {
                     actorSending.getActorType()
             );
 
-//            ActorConnection actorConnectionCache = dao.chatActorConnectionExists(linkedIdentity,actorReceiving.getPublicKey());
+            ActorConnection actorConnectionCache = dao.chatActorConnectionExists(linkedIdentity,actorReceiving.getPublicKey());
             ConnectionState connectionState = null;
-//            if(actorConnectionCache!=null)
-//            connectionState = actorConnectionCache.getConnectionState();
-//
-//            if(connectionState != null && connectionState.equals(ConnectionState.PENDING_LOCALLY_ACCEPTANCE))
-//                connectionState = ConnectionState.CONNECTED;
+            if(actorConnectionCache!=null)
+            connectionState = actorConnectionCache.getConnectionState();
+
+            if(connectionState != null && connectionState.equals(ConnectionState.PENDING_LOCALLY_ACCEPTANCE))
+                connectionState = ConnectionState.CONNECTED;
 //            else
 
             ChatActorConnection oldActorConnection = dao.chatActorConnectionExists(linkedIdentity, actorReceiving.getPublicKey());
