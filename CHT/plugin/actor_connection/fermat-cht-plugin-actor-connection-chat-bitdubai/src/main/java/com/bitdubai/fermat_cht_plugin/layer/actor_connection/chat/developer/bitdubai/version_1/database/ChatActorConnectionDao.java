@@ -87,7 +87,7 @@ public class ChatActorConnectionDao extends ActorConnectionDao<ChatLinkedActorId
         }
     }
 
-    public final boolean registerChatActorConnection(final ChatActorConnection actorConnection, ChatActorConnection oldActorConnection) throws CantRegisterActorConnectionException,
+    public final boolean registerChatActorConnection(final ChatActorConnection actorConnection) throws CantRegisterActorConnectionException,
             ActorConnectionAlreadyExistsException {
 
         boolean isNew = true;
@@ -102,15 +102,8 @@ public class ChatActorConnectionDao extends ActorConnectionDao<ChatLinkedActorId
                     actorConnection
             );
 
-            if (oldActorConnection != null) {
-                DatabaseTableRecord entityRecordOld = actorConnectionsTable.getEmptyRecord();
-                entityRecordOld = buildDatabaseRecord(
-                        entityRecordOld,
-                        oldActorConnection
-                );
-                actorConnectionsTable.deleteRecord(entityRecordOld);
-                isNew = false;
-            }
+
+
 
 
             actorConnectionsTable.insertRecord(entityRecord);
@@ -128,8 +121,6 @@ public class ChatActorConnectionDao extends ActorConnectionDao<ChatLinkedActorId
 //        } catch (CantUpdateRecordException e) {
 //
 //            throw new CantRegisterActorConnectionException(e, "", "There was an error trying to update the actor connection");
-        } catch (CantDeleteRecordException e) {
-            throw new CantRegisterActorConnectionException(e, "", "There was an error trying to delete the actor.");
         }
     }
 
