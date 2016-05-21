@@ -17,8 +17,8 @@ import com.bitdubai.fermat_p2p_api.layer.p2p_communication.MessagesStatus;
 import com.bitdubai.fermat_p2p_api.layer.p2p_communication.commons.client.CommunicationsVPNConnection;
 import com.bitdubai.fermat_p2p_api.layer.p2p_communication.commons.contents.FermatMessage;
 import com.bitdubai.fermat_p2p_api.layer.p2p_communication.commons.enums.FermatMessagesStatus;
-import com.bitdubai.fermat_pip_api.layer.platform_service.error_manager.enums.UnexpectedPluginExceptionSeverity;
-import com.bitdubai.fermat_pip_api.layer.platform_service.error_manager.interfaces.ErrorManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 import com.bitdubai.fermat_pip_api.layer.platform_service.event_manager.interfaces.EventManager;
 
 import java.util.HashMap;
@@ -163,7 +163,7 @@ public class CommunicationNetworkServiceRemoteAgent extends Observable {
             futures[SEND_TASK] = executorService.submit(toSend);
             futures[RECEIVE_TASK] = executorService.submit(toReceive);
 
-            System.out.println("IntraCommunicationNetworkServiceRemoteAgent - started ");
+            System.out.println("CommunicationNetworkServiceRemoteAgent - started ");
 
         }catch (Exception e){
             e.printStackTrace();
@@ -191,17 +191,23 @@ public class CommunicationNetworkServiceRemoteAgent extends Observable {
     public void stop(){
         try {
 
+            System.out.println("CommunicationNetworkServiceRemoteAgent - stopped ");
+
+
             //Stop the Threads
             futures[SEND_TASK].cancel(true);
             futures[RECEIVE_TASK].cancel(true);
 
             executorService.shutdownNow();
 
+            System.out.println("Old Template CommunicationNetworkServiceRemoteAgent - stop() - calling  communicationsVPNConnection.close()");
+
+
             //Disconnect from the service
             if (communicationsVPNConnection.isConnected())
                 communicationsVPNConnection.close();
 
-            System.out.println("IntraCommunicationNetworkServiceRemoteAgent - stopped ");
+            System.out.println("CommunicationNetworkServiceRemoteAgent - stopped ");
         }catch (Exception e){
             e.printStackTrace();
         }

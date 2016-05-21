@@ -22,6 +22,7 @@ import com.bitdubai.fermat_api.layer.all_definition.events.interfaces.FermatEven
 import com.bitdubai.fermat_api.layer.all_definition.events.interfaces.FermatEventListener;
 import com.bitdubai.fermat_api.layer.all_definition.network_service.enums.NetworkServiceType;
 import com.bitdubai.fermat_api.layer.all_definition.util.Version;
+import com.bitdubai.fermat_api.layer.core.PluginInfo;
 import com.bitdubai.fermat_api.layer.osa_android.file_system.FileLifeSpan;
 import com.bitdubai.fermat_api.layer.osa_android.file_system.FilePrivacy;
 import com.bitdubai.fermat_api.layer.osa_android.file_system.PluginFileSystem;
@@ -36,8 +37,7 @@ import com.bitdubai.fermat_p2p_api.layer.p2p_communication.commons.client.Commun
 import com.bitdubai.fermat_p2p_plugin.layer.ws.communications.cloud.client.developer.bitdubai.version_1.structure.agents.WsCommunicationsCloudClientSupervisorConnectionAgent;
 import com.bitdubai.fermat_p2p_plugin.layer.ws.communications.cloud.client.developer.bitdubai.version_1.structure.tyrus.WsCommunicationsTyrusCloudClientConnection;
 import com.bitdubai.fermat_p2p_plugin.layer.ws.communications.cloud.client.developer.bitdubai.version_1.structure.util.ServerConf;
-import com.bitdubai.fermat_pip_api.layer.platform_service.error_manager.enums.UnexpectedPluginExceptionSeverity;
-import com.bitdubai.fermat_pip_api.layer.platform_service.error_manager.interfaces.ErrorManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
 import com.bitdubai.fermat_pip_api.layer.platform_service.event_manager.interfaces.EventManager;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -70,13 +70,12 @@ import javax.websocket.DeploymentException;
  *
  * @version 1.0
  */
+@PluginInfo(createdBy = "Roberto Requena", maintainerMail = "rart3001@gmail.com", platform = Platforms.COMMUNICATION_PLATFORM, layer = Layers.COMMUNICATION, plugin = Plugins.WS_CLOUD_CLIENT)
 public class WsCommunicationsCloudClientPluginRoot extends AbstractPlugin implements WsCommunicationsCloudClientManager {
 
     /**
      * Addons References definition.
      */
-    @NeededAddonReference(platform = Platforms.PLUG_INS_PLATFORM, layer = Layers.PLATFORM_SERVICE, addon = Addons.ERROR_MANAGER)
-    private ErrorManager errorManager;
 
     @NeededAddonReference(platform = Platforms.PLUG_INS_PLATFORM, layer = Layers.PLATFORM_SERVICE, addon = Addons.EVENT_MANAGER)
     private EventManager eventManager;
@@ -188,18 +187,16 @@ public class WsCommunicationsCloudClientPluginRoot extends AbstractPlugin implem
          */
         if (eventManager    == null ||
             locationManager == null ||
-            errorManager    == null ||
             pluginFileSystem == null) {
 
             String context = "Plugin ID: "       + pluginId        + CantStartPluginException.CONTEXT_CONTENT_SEPARATOR +
                              "eventManager: "    + eventManager    + CantStartPluginException.CONTEXT_CONTENT_SEPARATOR +
                              "locationManager: " + locationManager + CantStartPluginException.CONTEXT_CONTENT_SEPARATOR +
-                             "errorManager: "    + errorManager    + CantStartPluginException.CONTEXT_CONTENT_SEPARATOR +
                              "pluginFileSystem: " + pluginFileSystem;
 
             CantStartPluginException pluginStartException = new CantStartPluginException(context, "No all required resource are injected");
 
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_WS_COMMUNICATION_CLIENT_CHANNEL, UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, pluginStartException);
+            reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, pluginStartException);
             throw pluginStartException;
 
         }
@@ -251,7 +248,7 @@ public class WsCommunicationsCloudClientPluginRoot extends AbstractPlugin implem
                          * Initialize Credentials to Connection to backup Connection AWS
                          */
                         wsCommunicationsTyrusCloudClientConnectionBackup = new WsCommunicationsTyrusCloudClientConnection(uri, eventManager, locationManager, clientIdentity, (WsCommunicationsCloudClientPluginRoot)getInstance(),ServerConf.SERVER_IP_PRODUCTION,ServerConf.DEFAULT_PORT, NetworkServiceType.UNDEFINED);
-                        //listServerConfByPlatform = listserverconfbyplatform();
+                        listServerConfByPlatform = listserverconfbyplatform();
 
                         /*
                          * Try to connect whit the cloud server
@@ -384,8 +381,12 @@ public class WsCommunicationsCloudClientPluginRoot extends AbstractPlugin implem
                 wsCommunicationsTyrusCloudClientConnectionNewUrl = new
                         WsCommunicationsTyrusCloudClientConnection(uriNewUrl, eventManager, locationManager, clientIdentity, (WsCommunicationsCloudClientPluginRoot) getInstance(), "192.168.1.8", 9090, NetworkServiceType.CHAT);
                 listOfWSCommunicationsTyrusCloudClientConnection.put(NetworkServiceType.CHAT, wsCommunicationsTyrusCloudClientConnectionNewUrl);
+                listOfWSCommunicationsTyrusCloudClientConnection.put(NetworkServiceType.ACTOR_CHAT, wsCommunicationsTyrusCloudClientConnectionNewUrl);
+
             }else{
                 listOfWSCommunicationsTyrusCloudClientConnection.put(NetworkServiceType.CHAT, wsCommunicationsTyrusCloudClientConnectionBackup);
+                listOfWSCommunicationsTyrusCloudClientConnection.put(NetworkServiceType.ACTOR_CHAT, wsCommunicationsTyrusCloudClientConnectionBackup);
+
             }
         /* CHAT */
 
@@ -431,6 +432,7 @@ public class WsCommunicationsCloudClientPluginRoot extends AbstractPlugin implem
 
             /* CHAT */
             listOfWSCommunicationsTyrusCloudClientConnection.put(NetworkServiceType.CHAT, wsCommunicationsTyrusCloudClientConnectionBackup);
+            listOfWSCommunicationsTyrusCloudClientConnection.put(NetworkServiceType.ACTOR_CHAT, wsCommunicationsTyrusCloudClientConnectionBackup);
             /* CHAT */
 
             /* Fermat Monitor */
@@ -694,12 +696,17 @@ public class WsCommunicationsCloudClientPluginRoot extends AbstractPlugin implem
      */
     @Override
     public CommunicationsClientConnection getCommunicationsCloudClientConnection(NetworkServiceType networkServiceType) {
-        return  listOfWSCommunicationsTyrusCloudClientConnection.get(networkServiceType);
+        if(listOfWSCommunicationsTyrusCloudClientConnection.containsKey(networkServiceType)){
+            return  listOfWSCommunicationsTyrusCloudClientConnection.get(networkServiceType);
+        }else{
+            return wsCommunicationsTyrusCloudClientConnectionBackup;
+        }
+
     }
 
-    public void connectToBackupConnection(NetworkServiceType networkServiceType) throws Exception{
+    public void connectToBackupConnection(NetworkServiceType networkServiceType) throws Exception {
 
-          System.out.println("************************************* Connect To Backup Connection AWS ********************************************");
+        System.out.println("************************************* Connect To Backup Connection AWS ********************************************");
 
 
           switch (networkServiceType){
@@ -727,13 +734,14 @@ public class WsCommunicationsCloudClientPluginRoot extends AbstractPlugin implem
                   break;
               case CHAT:
                       listOfWSCommunicationsTyrusCloudClientConnection.put(NetworkServiceType.CHAT,wsCommunicationsTyrusCloudClientConnectionBackup);
+                      listOfWSCommunicationsTyrusCloudClientConnection.put(NetworkServiceType.ACTOR_CHAT,wsCommunicationsTyrusCloudClientConnectionBackup);
                   break;
               case FERMAT_MONITOR:
                       listOfWSCommunicationsTyrusCloudClientConnection.put(NetworkServiceType.FERMAT_MONITOR,wsCommunicationsTyrusCloudClientConnectionBackup);
                   break;
               default:
+                  System.out.println("-----------ERROR, defaut connection backupt ns type---------------------------------------");
                   break;
-
           }
 
 //        if(!wsCommunicationsTyrusCloudClientConnectionBackup.isRegister() && !wsCommunicationsTyrusCloudClientConnectionBackup.isConnected()) {
@@ -867,7 +875,7 @@ public class WsCommunicationsCloudClientPluginRoot extends AbstractPlugin implem
                 /*
                  * The file cannot be created. I can not handle this situation.
                  */
-                errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_WS_COMMUNICATION_CLIENT_CHANNEL, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, exception);
+                reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, exception);
                 throw new CantStartPluginException(exception.getLocalizedMessage());
             }
 
@@ -877,11 +885,12 @@ public class WsCommunicationsCloudClientPluginRoot extends AbstractPlugin implem
             /*
              * The file cannot be load. I can not handle this situation.
              */
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_WS_COMMUNICATION_CLIENT_CHANNEL, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cantCreateFileException);
+            reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cantCreateFileException);
             throw new CantStartPluginException(cantCreateFileException.getLocalizedMessage());
 
         }
 
+        //System.out.println("WsCommunicationsCloudClientPluginRoot - clientIdentity.getPublicKey() = "+clientIdentity.getPublicKey());
     }
 
     /**
@@ -954,7 +963,7 @@ public class WsCommunicationsCloudClientPluginRoot extends AbstractPlugin implem
                 /*
                  * The file cannot be created. I can not handle this situation.
                  */
-                errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_WS_COMMUNICATION_CLIENT_CHANNEL, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, exception);
+                reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, exception);
                 throw new CantStartPluginException(exception.getLocalizedMessage());
             }
 
@@ -963,7 +972,7 @@ public class WsCommunicationsCloudClientPluginRoot extends AbstractPlugin implem
               /*
              * The file cannot be load. I can not handle this situation.
              */
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_WS_COMMUNICATION_CLIENT_CHANNEL, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cantCreateFileException);
+            reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cantCreateFileException);
             throw new CantStartPluginException(cantCreateFileException.getLocalizedMessage());
 
         }
@@ -1000,7 +1009,7 @@ public class WsCommunicationsCloudClientPluginRoot extends AbstractPlugin implem
             pluginTextFile.persistToMedia();
 
         }catch(Exception exception){
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_WS_COMMUNICATION_CLIENT_CHANNEL, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, exception);
+            reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, exception);
             throw new Exception(exception.getLocalizedMessage());
         }
 
@@ -1038,25 +1047,28 @@ public class WsCommunicationsCloudClientPluginRoot extends AbstractPlugin implem
             respond = restTemplate.getForObject("http://" + wsCommunicationsTyrusCloudClientConnectionBackup.getServerIp() + ":" + wsCommunicationsTyrusCloudClientConnectionBackup.getServerPort() + "/fermat/api/serverplatform/listserverconfbyplatform", String.class);
 
         }catch (Exception e){
-            e.printStackTrace();
+            System.out.println("NOT EXIST CONNECTION TO WEBSERVICE RESTFUL serverplatform");
+            //e.printStackTrace();
             respond = null;
         }
 
         /*
          * if respond have the result list
          */
-        if(respond.contains("data")){
+        if(respond!=null) {
+            if (respond.contains("data")) {
 
             /*
             * Decode into a json object
             */
-            JsonParser parser = new JsonParser();
-            JsonObject respondJsonObject = (JsonObject) parser.parse(respond.toString());
+                JsonParser parser = new JsonParser();
+                JsonObject respondJsonObject = (JsonObject) parser.parse(respond.toString());
 
-            Gson gson = new Gson();
-            listserverplatform = gson.fromJson(respondJsonObject.get("data").getAsString(), new TypeToken<Map<NetworkServiceType,String>>() {
-            }.getType());
+                Gson gson = new Gson();
+                listserverplatform = gson.fromJson(respondJsonObject.get("data").getAsString(), new TypeToken<Map<NetworkServiceType, String>>() {
+                }.getType());
 
+            }
         }
 
         return listserverplatform;
