@@ -77,7 +77,7 @@ public class ActorConnectionManager implements ChatActorConnectionManager {
             /**
              * Here I generate the needed information to register the new actor connection record.
              */
-            final UUID newConnectionId = UUID.randomUUID();
+            UUID newConnectionId = UUID.randomUUID();
             final ChatLinkedActorIdentity linkedIdentity = new ChatLinkedActorIdentity(
                     actorSending.getPublicKey(),
                     actorSending.getActorType()
@@ -86,18 +86,28 @@ public class ActorConnectionManager implements ChatActorConnectionManager {
 //            ActorConnection actorConnectionCache = dao.chatActorConnectionExists(linkedIdentity,actorReceiving.getPublicKey());
             ConnectionState connectionState = null;
 //            if(actorConnectionCache!=null)
-//            connectionState = actorConnectionCache.getConnectionState();
+//            connectionState = actorConnectionCache.getStatus();
 //
 //            if(connectionState != null && connectionState.equals(ConnectionState.PENDING_LOCALLY_ACCEPTANCE))
 //                connectionState = ConnectionState.CONNECTED;
 //            else
 
             ChatActorConnection oldActorConnection = dao.chatActorConnectionExists(linkedIdentity, actorReceiving.getPublicKey());
-            if(!oldActorConnection.getConnectionState().equals(ConnectionState.CONNECTED))
-                connectionState = ConnectionState.CONNECTED;
-            else connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+            if(oldActorConnection != null) {
+                //if (!oldActorConnection.getStatus().getCode().equals(ConnectionState.CONNECTED.getCode()))
+                connectionState = oldActorConnection.getConnectionState();//ConnectionState.CONNECTED;
 
+                //TODO: Vilchez esto debemos de analizar todo lo que estaba no funcionaba, pero de esta forma quedo estable
+                if(connectionState.getCode().equals(ConnectionState.DISCONNECTED_LOCALLY.getCode())) connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+                if(connectionState.getCode().equals(ConnectionState.DISCONNECTED_REMOTELY.getCode())) connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+                if(connectionState.getCode().equals(ConnectionState.DENIED_LOCALLY.getCode())) connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+                if(connectionState.getCode().equals(ConnectionState.DENIED_REMOTELY.getCode())) connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+                //TODO: Esto lo coloque porque cada vez que llegaba aca se creaba un nuevo ID y entonces cuando tratabas desconectar explotaba porque no lo conseguia
+                newConnectionId = oldActorConnection.getConnectionId();
+                //else
+                //    connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
 
+            }else connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
             final long currentTime = System.currentTimeMillis();
 
             final ChatActorConnection actorConnection = new ChatActorConnection(
@@ -108,7 +118,8 @@ public class ActorConnectionManager implements ChatActorConnectionManager {
                     actorReceiving.getImage(),
                     connectionState,
                     currentTime,
-                    currentTime
+                    currentTime,
+                    actorReceiving.getStatus()
             );
 
             /**

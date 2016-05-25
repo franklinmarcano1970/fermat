@@ -109,7 +109,10 @@ public class ChatActorConnectionDao extends ActorConnectionDao<ChatLinkedActorId
                         oldActorConnection
                 );
                 actorConnectionsTable.deleteRecord(entityRecordOld);
-                isNew = false;
+
+                if(actorConnection.getConnectionState().equals(oldActorConnection.getConnectionState())
+                        && (!actorConnection.getConnectionState().equals(ConnectionState.PENDING_REMOTELY_ACCEPTANCE)))
+                    isNew = false;
             }
 
 
@@ -145,6 +148,7 @@ public class ChatActorConnectionDao extends ActorConnectionDao<ChatLinkedActorId
         String country = record.getStringValue(ChatActorConnectionDatabaseConstants.ACTOR_CONNECTIONS_COUNTRY_COLUMN_NAME);
         String state = record.getStringValue(ChatActorConnectionDatabaseConstants.ACTOR_CONNECTIONS_STATE_LOCALITY_COLUMN_NAME);
         String city = record.getStringValue(ChatActorConnectionDatabaseConstants.ACTOR_CONNECTIONS_CITY_COLUMN_NAME);
+        String status = record.getStringValue(ChatActorConnectionDatabaseConstants.ACTOR_CONNECTIONS_STATUS_COLUMN_NAME);
 
         ConnectionState connectionState = ConnectionState.getByCode(connectionStateString);
 
@@ -181,7 +185,8 @@ public class ChatActorConnectionDao extends ActorConnectionDao<ChatLinkedActorId
                 updateTime,
                 country,
                 state,
-                city
+                city,
+                status
         );
     }
 
@@ -247,6 +252,7 @@ public class ChatActorConnectionDao extends ActorConnectionDao<ChatLinkedActorId
             record.setStringValue(ChatActorConnectionDatabaseConstants.ACTOR_CONNECTIONS_COUNTRY_COLUMN_NAME, actorConnection.getCountry());
             record.setStringValue(ChatActorConnectionDatabaseConstants.ACTOR_CONNECTIONS_STATE_LOCALITY_COLUMN_NAME, actorConnection.getState());
             record.setStringValue(ChatActorConnectionDatabaseConstants.ACTOR_CONNECTIONS_CITY_COLUMN_NAME, actorConnection.getCity());
+            record.setStringValue(ChatActorConnectionDatabaseConstants.ACTOR_CONNECTIONS_STATUS_COLUMN_NAME, actorConnection.getStatus());
 
             if (actorConnection.getImage() != null && actorConnection.getImage().length > 0)
                 persistNewUserProfileImage(actorConnection.getPublicKey(), actorConnection.getImage());
