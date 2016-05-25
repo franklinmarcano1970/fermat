@@ -8,6 +8,11 @@ import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.chat_actor_co
  */
 public interface ChatActorCommunitySelectableIdentity extends ActiveActorIdentityInformation {
 
+    /**
+     * The method <code>select</code> you can select an identity to work with.
+     *
+     * @return the profile image of the chat actor
+     */
     void select() throws CantGetSelectedActorException;
 
     byte[] getProfileImage();
