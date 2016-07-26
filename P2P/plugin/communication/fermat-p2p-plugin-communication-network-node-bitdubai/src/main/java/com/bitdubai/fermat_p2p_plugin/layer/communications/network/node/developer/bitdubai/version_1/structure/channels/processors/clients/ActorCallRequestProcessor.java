@@ -110,18 +110,17 @@ public class ActorCallRequestProcessor extends PackageProcessor {
             ActorCatalog actorCatalog = JPADaoFactory.getActorCatalogDao().findById(publicKey);
 
             ActorProfile actorProfile = new ActorProfile();
-            //TODO: Preguntar si esta correcto
+
             actorProfile.setIdentityPublicKey(actorCatalog.getClient().getId());
             actorProfile.setAlias(actorCatalog.getAlias());
             actorProfile.setName(actorCatalog.getName());
             actorProfile.setActorType(actorCatalog.getActorType());
             actorProfile.setPhoto(actorCatalog.getPhoto());
             actorProfile.setExtraData(actorCatalog.getExtraData());
-            //TODO: Preguntar si esta correcto
+
             actorProfile.setClientIdentityPublicKey(actorCatalog.getClient().getId());
 
             //Location
-            //TODO: Preguntar si esta correcto
             GeoLocation location = new GeoLocation();
             location.setAccuracy(actorCatalog.getLocation().getAccuracy());
             location.setLatitude(actorCatalog.getLocation().getLatitude());
@@ -132,7 +131,6 @@ public class ActorCallRequestProcessor extends PackageProcessor {
             NodeCatalog nodeCatalog = null;
 
             try {
-                //TODO: Preguntar si esta correcto
                 nodeCatalog = JPADaoFactory.getNodeCatalogDao().findById(actorCatalog.getHomeNode().getId());
             } catch (Exception e) {
                 e.printStackTrace();

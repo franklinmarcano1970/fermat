@@ -157,6 +157,7 @@ public class UpdateActorProfileIntoCatalogProcessor extends PackageProcessor {
         Client client = JPADaoFactory.getClientDao().findById(actorProfile.getClientIdentityPublicKey());
 
         actorCatalog.setClient(client);
+        actorCatalog.setLastConnection(currentMillis);
 
         /*
          * Save into the data base

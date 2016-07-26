@@ -153,8 +153,6 @@ public class ActorTraceDiscoveryQueryRequestProcessor extends PackageProcessor {
         if (discoveryQueryParameters.getOffset() != null && discoveryQueryParameters.getOffset() >= 0)
             offset = discoveryQueryParameters.getOffset();
 
-        Map<String, Object> filters;
-        //List<ActorCatalog> actors = JPADaoFactory.getActorCatalogDao().list(offset, max);
         List<ActorCatalog> actors = JPADaoFactory.getActorCatalogDao().findAll(discoveryQueryParameters,
                 discoveryQueryParameters.getIdentityPublicKey(),
                 max,

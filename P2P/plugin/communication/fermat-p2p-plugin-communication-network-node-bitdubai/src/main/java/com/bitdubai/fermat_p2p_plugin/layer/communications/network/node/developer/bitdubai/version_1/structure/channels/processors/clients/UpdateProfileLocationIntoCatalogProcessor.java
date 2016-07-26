@@ -15,6 +15,8 @@ import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.develope
 import org.apache.commons.lang.ClassUtils;
 import org.jboss.logging.Logger;
 
+import java.sql.Timestamp;
+
 import javax.websocket.Session;
 
 /**
@@ -111,6 +113,7 @@ public class UpdateProfileLocationIntoCatalogProcessor extends PackageProcessor 
             location.setLongitude(messageContent.getLocation().getLongitude());
 
             actorCatalog.setLocation(location);
+            actorCatalog.setLastConnection(new Timestamp(currentMillis));
 
             JPADaoFactory.getActorCatalogDao().update(actorCatalog);
 
