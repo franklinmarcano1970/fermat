@@ -10,13 +10,13 @@ import com.bitdubai.fermat_cht_api.layer.network_service.chat.enums.Distribution
 import com.bitdubai.fermat_cht_api.layer.network_service.chat.interfaces.ChatMetadata;
 import com.google.gson.Gson;
 
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * Created by Manuel Perez (darkpriestrelative@gmail.com) on 13/01/16.
  */
+@Deprecated
 public class ChatMetadataRecord implements ChatMetadata {
 
     UUID chatId;
@@ -34,35 +34,6 @@ public class ChatMetadataRecord implements ChatMetadata {
     DistributionStatus distributionStatus;
     TypeChat typeChat;
     List<GroupMember> groupMembers;
-
-//    public ChatMetadataRecord(
-//            UUID chatId,
-//            UUID objectId,
-//            PlatformComponentType localActorType,
-//            String localActorPublicKey,
-//            PlatformComponentType remoteActorType,
-//            String remoteActorPublicKey,
-//            String chatName,
-//            ChatMessageStatus chatMessageStatus,
-//            MessageStatus messageStatus,
-//            Timestamp date,
-//            UUID messageId,
-//            String message,
-//            DistributionStatus distributionStatus) {
-//        this.chatId = chatId;
-//        this.objectId = objectId;
-//        this.localActorType = localActorType;
-//        this.localActorPublicKey = localActorPublicKey;
-//        this.remoteActorType = remoteActorType;
-//        this.remoteActorPublicKey = remoteActorPublicKey;
-//        this.chatName = chatName;
-//        this.chatMessageStatus = chatMessageStatus;
-//        this.messageStatus = messageStatus;
-//        this.date = date;
-//        this.messageId = messageId;
-//        this.message = message;
-//        this.distributionStatus = distributionStatus;
-//    }
 
     public ChatMetadataRecord(
             UUID chatId,
@@ -133,34 +104,30 @@ public class ChatMetadataRecord implements ChatMetadata {
         return this.chatMessageStatus;
     }
 
-    @Override
-    public MessageStatus getMessageStatus() {
-        return this.messageStatus;
-    }
-
-    public void setMessageStatus(MessageStatus messageStatus) {
-        this.messageStatus = messageStatus;
-    }
+//    public MessageStatus getMessageStatus() {
+//        return this.messageStatus;
+//    }
+//
+//    public void setMessageStatus(MessageStatus messageStatus) {
+//        this.messageStatus = messageStatus;
+//    }
 
     @Override
     public String getDate() {
         return this.date;
     }
 
-    @Override
-    public UUID getMessageId() {
-        return this.messageId;
-    }
+//    @Override
+//    public UUID getMessageId() {
+//        return this.messageId;
+//    }
+//
+//    @Override
+//    public String getMessage() {
+//        return this.message;
+//    }
 
-    @Override
-    public String getMessage() {
-        return this.message;
-    }
 
-    @Override
-    public DistributionStatus getDistributionStatus() {
-        return this.distributionStatus;
-    }
 
     @Override
     public TypeChat getTypeChat() {
@@ -178,7 +145,7 @@ public class ChatMetadataRecord implements ChatMetadata {
         return gson.toJson(this);
     }
 
-    public static ChatMetadataRecord fromJson(String json){
+    public static ChatMetadataRecord fromJson(String json) {
         Gson gson = new Gson();
         return gson.fromJson(json, ChatMetadataRecord.class);
     }
@@ -238,9 +205,10 @@ public class ChatMetadataRecord implements ChatMetadata {
 
     /**
      * This method returns a XML String with all the objects set in this record
+     *
      * @return
      */
-    public String toString(){
+    public String toString() {
         return XMLParser.parseObject(this);
     }
 }

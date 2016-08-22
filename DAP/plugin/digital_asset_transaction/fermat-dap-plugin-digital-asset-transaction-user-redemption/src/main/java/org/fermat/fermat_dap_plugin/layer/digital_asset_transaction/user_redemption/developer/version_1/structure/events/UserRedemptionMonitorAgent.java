@@ -2,10 +2,10 @@ package org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.user_redemp
 
 import com.bitdubai.fermat_api.Agent;
 import com.bitdubai.fermat_api.CantStartAgentException;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.enums.Actors;
 import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
 import com.bitdubai.fermat_api.layer.all_definition.enums.CryptoCurrency;
-import com.bitdubai.fermat_api.layer.all_definition.enums.Plugins;
 import com.bitdubai.fermat_api.layer.all_definition.exceptions.CantSetObjectException;
 import com.bitdubai.fermat_api.layer.all_definition.exceptions.InvalidParameterException;
 import com.bitdubai.fermat_api.layer.all_definition.money.CryptoAddress;
@@ -18,26 +18,27 @@ import com.bitdubai.fermat_api.layer.osa_android.database_system.PluginDatabaseS
 import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.CantExecuteQueryException;
 import com.bitdubai.fermat_api.layer.osa_android.logger_system.DealsWithLogger;
 import com.bitdubai.fermat_api.layer.osa_android.logger_system.LogManager;
-import com.bitdubai.fermat_bch_api.layer.crypto_network.bitcoin.BroadcastStatus;
+import com.bitdubai.fermat_bch_api.layer.crypto_network.manager.BlockchainManager;
+import com.bitdubai.fermat_bch_api.layer.crypto_network.util.BroadcastStatus;
 import com.bitdubai.fermat_bch_api.layer.crypto_network.bitcoin.exceptions.CantBroadcastTransactionException;
 import com.bitdubai.fermat_bch_api.layer.crypto_network.bitcoin.exceptions.CantCancellBroadcastTransactionException;
 import com.bitdubai.fermat_bch_api.layer.crypto_network.bitcoin.exceptions.CantGetBroadcastStatusException;
 import com.bitdubai.fermat_bch_api.layer.crypto_network.bitcoin.exceptions.CantGetCryptoTransactionException;
 import com.bitdubai.fermat_bch_api.layer.crypto_network.bitcoin.exceptions.CantGetTransactionCryptoStatusException;
-import com.bitdubai.fermat_bch_api.layer.crypto_network.bitcoin.interfaces.BitcoinNetworkManager;
+
 import com.bitdubai.fermat_bch_api.layer.crypto_vault.asset_vault.exceptions.CantSendAssetBitcoinsToUserException;
 import com.bitdubai.fermat_bch_api.layer.crypto_vault.asset_vault.interfaces.AssetVaultManager;
+
 import org.fermat.fermat_dap_api.layer.all_definition.digital_asset.DigitalAssetMetadata;
 import org.fermat.fermat_dap_api.layer.all_definition.enums.AssetMovementType;
 import org.fermat.fermat_dap_api.layer.all_definition.enums.DAPMessageSubject;
 import org.fermat.fermat_dap_api.layer.all_definition.enums.DAPTransactionType;
 import org.fermat.fermat_dap_api.layer.all_definition.enums.DistributionStatus;
-
 import org.fermat.fermat_dap_api.layer.all_definition.network_service_message.DAPMessage;
 import org.fermat.fermat_dap_api.layer.all_definition.network_service_message.content_message.AssetMovementContentMessage;
 import org.fermat.fermat_dap_api.layer.all_definition.network_service_message.content_message.DistributionStatusUpdateContentMessage;
 import org.fermat.fermat_dap_api.layer.all_definition.network_service_message.exceptions.CantGetDAPMessagesException;
-import org.fermat.fermat_dap_api.layer.all_definition.network_service_message.exceptions.CantSendMessageException;
+import org.fermat.fermat_dap_api.layer.all_definition.network_service_message.exceptions.CantSendDAPMessageException;
 import org.fermat.fermat_dap_api.layer.all_definition.network_service_message.exceptions.CantUpdateMessageStatusException;
 import org.fermat.fermat_dap_api.layer.dap_actor.asset_issuer.AssetIssuerActorRecord;
 import org.fermat.fermat_dap_api.layer.dap_actor.asset_issuer.exceptions.CantGetAssetIssuerActorsException;
@@ -68,12 +69,11 @@ import org.fermat.fermat_dap_api.layer.dap_wallet.common.enums.BalanceType;
 import org.fermat.fermat_dap_api.layer.dap_wallet.common.enums.TransactionType;
 import org.fermat.fermat_dap_api.layer.dap_wallet.common.exceptions.CantGetTransactionsException;
 import org.fermat.fermat_dap_api.layer.dap_wallet.common.exceptions.CantLoadWalletException;
+import org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.user_redemption.developer.version_1.UserRedemptionDigitalAssetTransactionPluginRoot;
 import org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.user_redemption.developer.version_1.exceptions.CantCheckAssetUserRedemptionProgressException;
 import org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.user_redemption.developer.version_1.structure.database.UserRedemptionDao;
-
-import com.bitdubai.fermat_pip_api.layer.platform_service.error_manager.DealsWithErrors;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
+import org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.user_redemption.developer.version_1.structure.functional.DeliverRecord;
+import org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.user_redemption.developer.version_1.structure.functional.DigitalAssetUserRedemptionVault;
 
 import java.util.Date;
 import java.util.List;
@@ -82,29 +82,31 @@ import java.util.UUID;
 /**
  * Created by Manuel Perez (darkpriestrelative@gmail.com) on 03/11/15.
  */
-public class UserRedemptionMonitorAgent implements Agent, DealsWithLogger, DealsWithErrors {
+public class UserRedemptionMonitorAgent implements Agent, DealsWithLogger {
 
     private Thread agentThread;
     private LogManager logManager;
-    private ErrorManager errorManager;
+    UserRedemptionDigitalAssetTransactionPluginRoot userRedemptionDigitalAssetTransactionPluginRoot;
     private AssetVaultManager assetVaultManager;
-    private org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.user_redemption.developer.version_1.structure.functional.DigitalAssetUserRedemptionVault digitalAssetUserRedemptionVault;
+    private DigitalAssetUserRedemptionVault digitalAssetUserRedemptionVault;
     private AssetTransmissionNetworkServiceManager assetTransmissionManager;
-    private BitcoinNetworkManager bitcoinNetworkManager;
+    private BlockchainManager bitcoinNetworkManager;
     private UserRedemptionDao userRedemptionDao;
     private ActorAssetUserManager actorAssetUserManager;
     private ActorAssetRedeemPointManager redeemPointManager;
 
     public UserRedemptionMonitorAgent(PluginDatabaseSystem pluginDatabaseSystem,
-                                      ErrorManager errorManager,
+                                      UserRedemptionDigitalAssetTransactionPluginRoot userRedemptionDigitalAssetTransactionPluginRoot,
                                       UUID pluginId,
                                       ActorAssetRedeemPointManager redeemPointManager,
                                       AssetVaultManager assetVaultManager,
                                       LogManager logManager,
-                                      BitcoinNetworkManager bitcoinNetworkManager,
-                                      org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.user_redemption.developer.version_1.structure.functional.DigitalAssetUserRedemptionVault digitalAssetUserRedemptionVault,
-                                      AssetTransmissionNetworkServiceManager assetTransmissionManager, ActorAssetUserManager actorAssetUserManager) throws CantSetObjectException, CantExecuteDatabaseOperationException {
-        this.errorManager = errorManager;
+                                      BlockchainManager bitcoinNetworkManager,
+                                      DigitalAssetUserRedemptionVault digitalAssetUserRedemptionVault,
+                                      AssetTransmissionNetworkServiceManager assetTransmissionManager,
+                                      ActorAssetUserManager actorAssetUserManager) throws CantSetObjectException, CantExecuteDatabaseOperationException {
+
+        this.userRedemptionDigitalAssetTransactionPluginRoot = userRedemptionDigitalAssetTransactionPluginRoot;
         this.redeemPointManager = redeemPointManager;
         this.actorAssetUserManager = actorAssetUserManager;
         setLogManager(logManager);
@@ -115,7 +117,7 @@ public class UserRedemptionMonitorAgent implements Agent, DealsWithLogger, Deals
         userRedemptionDao = new UserRedemptionDao(pluginDatabaseSystem, pluginId, digitalAssetUserRedemptionVault);
     }
 
-    public void setBitcoinNetworkManager(BitcoinNetworkManager bitcoinNetworkManager) throws CantSetObjectException {
+    public void setBitcoinNetworkManager(BlockchainManager bitcoinNetworkManager) throws CantSetObjectException {
         if (bitcoinNetworkManager == null) {
             throw new CantSetObjectException("bitcoinNetworkManager is null");
         }
@@ -156,12 +158,6 @@ public class UserRedemptionMonitorAgent implements Agent, DealsWithLogger, Deals
     }
 
     @Override
-    public void setErrorManager(ErrorManager errorManager) {
-        this.errorManager = errorManager;
-    }
-
-
-    @Override
     public void setLogManager(LogManager logManager) {
         this.logManager = logManager;
     }
@@ -196,12 +192,10 @@ public class UserRedemptionMonitorAgent implements Agent, DealsWithLogger, Deals
 
                     logManager.log(org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.user_redemption.developer.version_1.UserRedemptionDigitalAssetTransactionPluginRoot.getLogLevelByClass(this.getClass().getName()), "Iteration number " + iterationNumber, null, null);
                     doTheMainTask();
-                } catch (CantCheckAssetUserRedemptionProgressException | CantExecuteQueryException exception) {
-                    errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_USER_REDEMPTION_TRANSACTION, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, exception);
+                } catch (CantCheckAssetUserRedemptionProgressException | CantExecuteQueryException e) {
+                    userRedemptionDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
                 }
-
             }
-
         }
 
         private void doTheMainTask() throws CantExecuteQueryException, CantCheckAssetUserRedemptionProgressException {
@@ -211,25 +205,35 @@ public class UserRedemptionMonitorAgent implements Agent, DealsWithLogger, Deals
                 checkNetworkLayerEvents();
                 checkPendingTransactions();
 
-            } catch (CantSendAssetBitcoinsToUserException exception) {
-                throw new CantCheckAssetUserRedemptionProgressException(exception, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot send crypto currency to asset user");
-            } catch (UnexpectedResultReturnedFromDatabaseException exception) {
-                throw new CantCheckAssetUserRedemptionProgressException(exception, "Exception in ASSET USER REDEMPTION monitor agent", "Unexpected result in database query");
-            } catch (CantGetCryptoTransactionException exception) {
-                throw new CantCheckAssetUserRedemptionProgressException(exception, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot get genesis transaction from asset vault");
-            } catch (CantDeliverPendingTransactionsException exception) {
-                throw new CantCheckAssetUserRedemptionProgressException(exception, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot deliver pending transactions");
-            } catch (CantDistributeDigitalAssetsException | CantCreateDigitalAssetFileException exception) {
-                throw new CantCheckAssetUserRedemptionProgressException(exception, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot distribute digital asset");
-            } catch (CantConfirmTransactionException exception) {
-                throw new CantCheckAssetUserRedemptionProgressException(exception, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot confirm transaction");
-            } catch (CantGetDigitalAssetFromLocalStorageException exception) {
-                throw new CantCheckAssetUserRedemptionProgressException(exception, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot get DigitalAssetMetadata from local storage");
-            } catch (CantDeliverDigitalAssetToAssetWalletException | CantGetAssetUserActorsException | CantGetBroadcastStatusException | CantAssetUserActorNotFoundException | CantBroadcastTransactionException | CantCancellBroadcastTransactionException | RecordsNotFoundException | CantGetTransactionCryptoStatusException | CantRegisterCreditException | CantExecuteDatabaseOperationException | CantGetAssetIssuerActorsException | CantLoadWalletException | CantGetTransactionsException | CantSendTransactionNewStatusNotificationException | CantRegisterDebitException exception) {
-                throw new CantCheckAssetUserRedemptionProgressException(exception, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot set Credit in asset issuer wallet");
+            } catch (CantSendAssetBitcoinsToUserException e) {
+                userRedemptionDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+                throw new CantCheckAssetUserRedemptionProgressException(e, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot send crypto currency to asset user");
+            } catch (UnexpectedResultReturnedFromDatabaseException e) {
+                userRedemptionDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+                throw new CantCheckAssetUserRedemptionProgressException(e, "Exception in ASSET USER REDEMPTION monitor agent", "Unexpected result in database query");
+            } catch (CantGetCryptoTransactionException e) {
+                userRedemptionDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+                throw new CantCheckAssetUserRedemptionProgressException(e, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot get genesis transaction from asset vault");
+            } catch (CantDeliverPendingTransactionsException e) {
+                userRedemptionDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+                throw new CantCheckAssetUserRedemptionProgressException(e, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot deliver pending transactions");
+            } catch (CantDistributeDigitalAssetsException | CantCreateDigitalAssetFileException e) {
+                userRedemptionDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+                throw new CantCheckAssetUserRedemptionProgressException(e, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot distribute digital asset");
+            } catch (CantConfirmTransactionException e) {
+                userRedemptionDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+                throw new CantCheckAssetUserRedemptionProgressException(e, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot confirm transaction");
+            } catch (CantGetDigitalAssetFromLocalStorageException e) {
+                userRedemptionDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+                throw new CantCheckAssetUserRedemptionProgressException(e, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot get DigitalAssetMetadata from local storage");
+            } catch (CantDeliverDigitalAssetToAssetWalletException | CantGetAssetUserActorsException | CantGetBroadcastStatusException | CantAssetUserActorNotFoundException | CantBroadcastTransactionException | CantCancellBroadcastTransactionException | RecordsNotFoundException | CantGetTransactionCryptoStatusException | CantRegisterCreditException | CantExecuteDatabaseOperationException | CantGetAssetIssuerActorsException | CantLoadWalletException | CantGetTransactionsException | CantSendTransactionNewStatusNotificationException | CantRegisterDebitException e) {
+                userRedemptionDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+                throw new CantCheckAssetUserRedemptionProgressException(e, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot set Credit in asset issuer wallet");
             } catch (InvalidParameterException | CantUpdateMessageStatusException | CantGetDAPMessagesException | CantAssetRedeemPointActorNotFoundException | CantSetObjectException | CantGetAssetRedeemPointActorsException e) {
+                userRedemptionDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
                 e.printStackTrace();
-            } catch (CantSendMessageException e) {
+            } catch (CantSendDAPMessageException e) {
+                userRedemptionDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
                 throw new CantCheckAssetUserRedemptionProgressException(e, "Exception in ASSET USER REDEMPTION monitor agent", "Cannot send actor information");
             }
         }
@@ -242,6 +246,7 @@ public class UserRedemptionMonitorAgent implements Agent, DealsWithLogger, Deals
                     try {
                         bitcoinNetworkManager.cancelBroadcast(record.getDigitalAssetMetadata().getLastTransactionHash());
                     } catch (CantCancellBroadcastTransactionException e) {
+                        userRedemptionDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
                         e.printStackTrace();
                     }
                     record.getDigitalAssetMetadata().removeLastTransaction();
@@ -251,7 +256,7 @@ public class UserRedemptionMonitorAgent implements Agent, DealsWithLogger, Deals
             }
         }
 
-        private void checkNetworkLayerEvents() throws CantConfirmTransactionException, CantExecuteQueryException, UnexpectedResultReturnedFromDatabaseException, CantCheckAssetUserRedemptionProgressException, CantGetDigitalAssetFromLocalStorageException, CantSendAssetBitcoinsToUserException, CantGetCryptoTransactionException, CantDeliverDigitalAssetToAssetWalletException, CantDistributeDigitalAssetsException, CantDeliverPendingTransactionsException, RecordsNotFoundException, CantBroadcastTransactionException, CantCreateDigitalAssetFileException, CantLoadWalletException, CantGetTransactionsException, CantGetAssetUserActorsException, CantAssetUserActorNotFoundException, CantRegisterDebitException, CantGetAssetIssuerActorsException, CantRegisterCreditException, CantGetDAPMessagesException, CantUpdateMessageStatusException, CantSendMessageException, CantSetObjectException, CantAssetRedeemPointActorNotFoundException, CantGetAssetRedeemPointActorsException {
+        private void checkNetworkLayerEvents() throws CantConfirmTransactionException, CantExecuteQueryException, UnexpectedResultReturnedFromDatabaseException, CantCheckAssetUserRedemptionProgressException, CantGetDigitalAssetFromLocalStorageException, CantSendAssetBitcoinsToUserException, CantGetCryptoTransactionException, CantDeliverDigitalAssetToAssetWalletException, CantDistributeDigitalAssetsException, CantDeliverPendingTransactionsException, RecordsNotFoundException, CantBroadcastTransactionException, CantCreateDigitalAssetFileException, CantLoadWalletException, CantGetTransactionsException, CantGetAssetUserActorsException, CantAssetUserActorNotFoundException, CantRegisterDebitException, CantGetAssetIssuerActorsException, CantRegisterCreditException, CantGetDAPMessagesException, CantUpdateMessageStatusException, CantSendDAPMessageException, CantSetObjectException, CantAssetRedeemPointActorNotFoundException, CantGetAssetRedeemPointActorsException {
             List<DAPMessage> newStatuses = assetTransmissionManager.getUnreadDAPMessageBySubject(DAPMessageSubject.USER_REDEMPTION);
             if (!userRedemptionDao.getPendingNetworkLayerEvents().isEmpty()) {
                 for (DAPMessage message : newStatuses) {
@@ -336,7 +341,7 @@ public class UserRedemptionMonitorAgent implements Agent, DealsWithLogger, Deals
          * @throws CantDeliverDigitalAssetToAssetWalletException
          */
         private void checkPendingTransactions() throws CantExecuteQueryException, CantCheckAssetUserRedemptionProgressException, CantGetCryptoTransactionException, UnexpectedResultReturnedFromDatabaseException, CantGetDigitalAssetFromLocalStorageException, CantDeliverDigitalAssetToAssetWalletException, CantGetTransactionCryptoStatusException, RecordsNotFoundException, CantGetBroadcastStatusException, CantCancellBroadcastTransactionException, CantBroadcastTransactionException, CantGetTransactionsException, CantGetAssetUserActorsException, CantRegisterDebitException, CantAssetUserActorNotFoundException, CantLoadWalletException, CantGetAssetIssuerActorsException, CantRegisterCreditException, CantCreateDigitalAssetFileException {
-            for (org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.user_redemption.developer.version_1.structure.functional.DeliverRecord record : userRedemptionDao.getDeliveredRecords()) {
+            for (DeliverRecord record : userRedemptionDao.getDeliveredRecords()) {
                 switch (bitcoinNetworkManager.getCryptoStatus(record.getGenesisTransactionSent())) {
                     case ON_BLOCKCHAIN:
                     case IRREVERSIBLE:
@@ -355,12 +360,12 @@ public class UserRedemptionMonitorAgent implements Agent, DealsWithLogger, Deals
                 }
             }
 
-            for (org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.user_redemption.developer.version_1.structure.functional.DeliverRecord record : userRedemptionDao.getSendingCryptoRecords()) {
+            for (DeliverRecord record : userRedemptionDao.getSendingCryptoRecords()) {
                 BroadcastStatus status = bitcoinNetworkManager.getBroadcastStatus(record.getGenesisTransactionSent());
                 switch (status.getStatus()) {
                     case WITH_ERROR:
                         System.out.println("VAMM: USER REDEMPTION BROADCAST WITH ERROR");
-                        if (record.getAttemptNumber() < org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.user_redemption.developer.version_1.UserRedemptionDigitalAssetTransactionPluginRoot.BROADCASTING_MAX_ATTEMPT_NUMBER) {
+                        if (record.getAttemptNumber() < UserRedemptionDigitalAssetTransactionPluginRoot.BROADCASTING_MAX_ATTEMPT_NUMBER) {
                             System.out.println("VAMM: ATTEMPT NUMBER: " + record.getAttemptNumber());
                             userRedemptionDao.newAttempt(record.getTransactionId());
                             bitcoinNetworkManager.broadcastTransaction(record.getGenesisTransactionSent());
@@ -391,7 +396,7 @@ public class UserRedemptionMonitorAgent implements Agent, DealsWithLogger, Deals
             bitcoinNetworkManager.broadcastTransaction(digitalAssetMetadata.getLastTransactionHash());
         }
 
-        private void sendAssetMovement(DigitalAssetMetadata digitalAssetMetadata, ActorAssetRedeemPoint redeemPoint) throws CantSetObjectException, CantGetAssetUserActorsException, CantSendMessageException {
+        private void sendAssetMovement(DigitalAssetMetadata digitalAssetMetadata, ActorAssetRedeemPoint redeemPoint) throws CantSetObjectException, CantGetAssetUserActorsException, CantSendDAPMessageException {
             //Storing Users
             ActorAssetUser actorSender = actorAssetUserManager.getActorAssetUser();
             ActorAssetIssuer actorReceiver = (ActorAssetIssuer) new AssetIssuerActorRecord(digitalAssetMetadata.getDigitalAsset().getName(), digitalAssetMetadata.getDigitalAsset().getPublicKey());

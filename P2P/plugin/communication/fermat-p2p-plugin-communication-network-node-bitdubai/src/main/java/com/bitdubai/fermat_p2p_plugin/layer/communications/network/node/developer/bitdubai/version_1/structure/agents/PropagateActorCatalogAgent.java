@@ -1,9 +1,3 @@
-/*
- * @#PropagateActorCatalogAgent.java - 2016
- * Copyright bitDubai.com., All rights reserved.
- * You may not modify, use, reproduce or distribute this software.
- * BITDUBAI/CONFIDENTIAL
- */
 package com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.agents;
 
 import com.bitdubai.fermat_api.CantStartAgentException;
@@ -11,9 +5,9 @@ import com.bitdubai.fermat_api.CantStopAgentException;
 import com.bitdubai.fermat_api.FermatAgent;
 import com.bitdubai.fermat_api.FermatException;
 import com.bitdubai.fermat_api.layer.all_definition.enums.AgentStatus;
-import com.bitdubai.fermat_p2p_api.layer.all_definition.common.network_services.template.exceptions.CantReadRecordDataBaseException;
-import com.bitdubai.fermat_p2p_api.layer.all_definition.common.network_services.template.exceptions.CantUpdateRecordDataBaseException;
-import com.bitdubai.fermat_p2p_api.layer.all_definition.common.network_services.template.exceptions.RecordNotFoundException;
+import com.bitdubai.fermat_api.layer.all_definition.exceptions.InvalidParameterException;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.PackageType;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.NetworkNodePluginRoot;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.endpoinsts.clients.FermatWebSocketClientNodeChannel;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.context.NodeContext;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.context.NodeContextItem;
@@ -22,15 +16,17 @@ import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.develope
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.database.daos.DaoFactory;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.database.daos.NodesCatalogDao;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.entities.ActorsCatalogTransaction;
-import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.entities.ActorsCatalogTransactionsPendingForPropagation;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.entities.NodesCatalog;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.CantDeleteRecordDataBaseException;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.CantReadRecordDataBaseException;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.CantUpdateRecordDataBaseException;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.RecordNotFoundException;
 
+import org.apache.commons.lang.ClassUtils;
 import org.jboss.logging.Logger;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -42,14 +38,26 @@ import java.util.concurrent.TimeUnit;
  * Created by Roberto Requena - (rart3001@gmail.com) on 04/04/16.
  *
  * @version 1.0
- * @since Java JDK 1.7
+ * @since   Java JDK 1.7
  */
-public class PropagateActorCatalogAgent  extends FermatAgent {
+public class PropagateActorCatalogAgent extends FermatAgent {
 
     /**
      * Represent the LOG
      */
-    private final Logger LOG = Logger.getLogger(PropagateActorCatalogAgent.class.getName());
+    private final Logger LOG = Logger.getLogger(ClassUtils.getShortClassName(PropagateActorCatalogAgent.class));
+
+    /**
+     * Represent the propagation time
+     */
+    private static final int PROPAGATION_TIME = 30;
+
+    private static final int INIT_TIME = 180;
+
+    /**
+     * Represent the MIN_SUCCESSFUL_PROPAGATION_COUNT
+     */
+    public static final int MIN_SUCCESSFUL_PROPAGATION_COUNT = 7;
 
     /**
      * Represent the scheduledThreadPool
@@ -72,13 +80,25 @@ public class PropagateActorCatalogAgent  extends FermatAgent {
     private ActorsCatalogTransactionsPendingForPropagationDao actorsCatalogTransactionsPendingForPropagationDao;
 
     /**
+     * Represent the networkNodePluginRoot
+     */
+    private NetworkNodePluginRoot networkNodePluginRoot;
+
+    /**
+     * Represent the successfulPropagateCount
+     */
+    private int successfulPropagateCount;
+
+    /**
      * Constructor
      */
-    public  PropagateActorCatalogAgent(){
+    public  PropagateActorCatalogAgent(NetworkNodePluginRoot networkNodePluginRoot){
+        this.networkNodePluginRoot = networkNodePluginRoot;
         this.scheduledThreadPool = Executors.newScheduledThreadPool(1);
         this.scheduledFutures    = new ArrayList<>();
         this.nodesCatalogDao     = ((DaoFactory) NodeContext.get(NodeContextItem.DAO_FACTORY)).getNodesCatalogDao();
         this.actorsCatalogTransactionsPendingForPropagationDao = ((DaoFactory) NodeContext.get(NodeContextItem.DAO_FACTORY)).getActorsCatalogTransactionsPendingForPropagationDao();
+        this.successfulPropagateCount = 0;
     }
 
     /**
@@ -95,13 +115,12 @@ public class PropagateActorCatalogAgent  extends FermatAgent {
 
             try {
                 propagateCatalog();
-            }catch (Exception e){
+            } catch (Exception e){
+                e.printStackTrace();
                 LOG.error(e.getMessage());
             }
-
         }
     }
-
 
     /**
      * (non-javadoc)
@@ -109,10 +128,10 @@ public class PropagateActorCatalogAgent  extends FermatAgent {
      */
     @Override
     public void start() throws CantStartAgentException {
-
+        LOG.info("Start");
         try {
 
-            scheduledFutures.add(scheduledThreadPool.scheduleAtFixedRate(new PropagationTask(), 1,  1, TimeUnit.MINUTES));
+            scheduledFutures.add(scheduledThreadPool.scheduleAtFixedRate(new PropagationTask(), INIT_TIME,  PROPAGATION_TIME, TimeUnit.SECONDS));
             this.status = AgentStatus.STARTED;
 
         } catch (Exception exception) {
@@ -125,10 +144,11 @@ public class PropagateActorCatalogAgent  extends FermatAgent {
      * @see FermatAgent#resume()
      */
     public void resume() throws CantStartAgentException {
+        LOG.info("Resume");
         try {
             try {
 
-                scheduledFutures.add(scheduledThreadPool.scheduleAtFixedRate(new PropagationTask(), 1,  1, TimeUnit.MINUTES));
+                scheduledFutures.add(scheduledThreadPool.scheduleAtFixedRate(new PropagationTask(), INIT_TIME,  PROPAGATION_TIME, TimeUnit.SECONDS));
                 this.status = AgentStatus.STARTED;
 
             } catch (Exception exception) {
@@ -146,6 +166,7 @@ public class PropagateActorCatalogAgent  extends FermatAgent {
      * @see FermatAgent#pause()
      */
     public void pause() throws CantStopAgentException {
+        LOG.info("Pause");
         try {
 
             for (ScheduledFuture future: scheduledFutures) {
@@ -165,6 +186,7 @@ public class PropagateActorCatalogAgent  extends FermatAgent {
      * @see FermatAgent#stop()
      */
     public void stop() throws CantStopAgentException {
+        LOG.info("Stop");
         try {
 
             scheduledThreadPool.shutdown();
@@ -179,48 +201,41 @@ public class PropagateActorCatalogAgent  extends FermatAgent {
     /**
      * Propagation logic implementation
      */
-    private void propagateCatalog() throws CantReadRecordDataBaseException, CantUpdateRecordDataBaseException, RecordNotFoundException {
+    private void propagateCatalog() throws CantReadRecordDataBaseException, CantUpdateRecordDataBaseException, RecordNotFoundException, InvalidParameterException, CantDeleteRecordDataBaseException, InterruptedException {
 
-        List<NodesCatalog> nodesCatalogsList = getCatalogueListToShare();
+        LOG.info("Executing actor propagateCatalog()");
+
+        successfulPropagateCount = 0;
+        List<NodesCatalog> nodesCatalogsList = nodesCatalogDao.getNodeCatalogueListToShare(networkNodePluginRoot.getIdentity().getPublicKey());
         List<ActorsCatalogTransaction> transactionList = getActorsCatalogTransactionPendingForPropagationBlock();
 
         if ((nodesCatalogsList != null && !nodesCatalogsList.isEmpty()) &&
                 (transactionList != null && !transactionList.isEmpty())){
 
+            ReceiveActorCatalogTransactionsMsjRequest receiveActorCatalogTransactionsMsjRequest = new ReceiveActorCatalogTransactionsMsjRequest(transactionList);
+            String messageContent = receiveActorCatalogTransactionsMsjRequest.toJson();
+            FermatWebSocketClientNodeChannel fermatWebSocketClientNodeChannel;
+
+            LOG.info("Actor transactions to propagate size = " + transactionList.size());
+
             for (NodesCatalog remoteNodesCatalog: nodesCatalogsList) {
 
                 try {
 
-                    FermatWebSocketClientNodeChannel fermatWebSocketClientNodeChannel = new FermatWebSocketClientNodeChannel(remoteNodesCatalog);
-                    ReceiveActorCatalogTransactionsMsjRequest receiveActorCatalogTransactionsMsjRequest = new ReceiveActorCatalogTransactionsMsjRequest(transactionList);
-                    fermatWebSocketClientNodeChannel.sendMessage(receiveActorCatalogTransactionsMsjRequest.toJson());
+                    fermatWebSocketClientNodeChannel = new FermatWebSocketClientNodeChannel(remoteNodesCatalog);
 
-                }catch (Exception e){
+                    fermatWebSocketClientNodeChannel.sendMessage(messageContent, PackageType.RECEIVE_ACTOR_CATALOG_TRANSACTIONS_REQUEST);
 
-                    remoteNodesCatalog.setOfflineCounter(remoteNodesCatalog.getOfflineCounter()+1);
-                    nodesCatalogDao.update(remoteNodesCatalog);
+                } catch (Exception e){
+
+                    nodesCatalogDao.setOfflineCounter(remoteNodesCatalog.getIdentityPublicKey(), remoteNodesCatalog.getOfflineCounter()+1);
                 }
             }
 
+        } else {
+
+            LOG.info("No actor transactions to propagate...");
         }
-
-    }
-
-
-    /**
-     * Return a list of nodes catalog
-     *
-     * @return List<NodesCatalog>
-     */
-    private List<NodesCatalog> getCatalogueListToShare() throws CantReadRecordDataBaseException {
-
-        //TODO: Complete the condition filter
-        Map<String, Object> filters = new HashMap<>();
-        //filters.put();
-        //filters.put();
-
-        return nodesCatalogDao.findAll(filters);
-
     }
 
     /**
@@ -230,18 +245,27 @@ public class PropagateActorCatalogAgent  extends FermatAgent {
      */
     private List<ActorsCatalogTransaction> getActorsCatalogTransactionPendingForPropagationBlock() throws CantReadRecordDataBaseException {
 
-        List<ActorsCatalogTransactionsPendingForPropagation> transactionsPendingForPropagation = actorsCatalogTransactionsPendingForPropagationDao.findAll();
-        List<ActorsCatalogTransaction> transactionList = new ArrayList<>();
+        List<ActorsCatalogTransaction> transactionsPendingForPropagation = actorsCatalogTransactionsPendingForPropagationDao.findAll();
 
-        if (transactionsPendingForPropagation != null && !transactionsPendingForPropagation.isEmpty()){
+        if (transactionsPendingForPropagation == null)
+            transactionsPendingForPropagation = new ArrayList<>();
 
-            for (ActorsCatalogTransactionsPendingForPropagation actorsCatalogTransactionsPendingForPropagation : transactionsPendingForPropagation) {
-                transactionList.add(actorsCatalogTransactionsPendingForPropagation.getActorsCatalogTransaction());
-            }
+        return transactionsPendingForPropagation;
+    }
 
-        }
+    /**
+     * Get Successful Propagate Count
+     * @return int
+     */
+    public int getSuccessfulPropagateCount() {
+        return successfulPropagateCount;
+    }
 
-        return  transactionList;
-
+    /**
+     * Set Successful Propagate Count
+     * @param successfulPropagateCount
+     */
+    public void setSuccessfulPropagateCount(int successfulPropagateCount) {
+        this.successfulPropagateCount = successfulPropagateCount;
     }
 }

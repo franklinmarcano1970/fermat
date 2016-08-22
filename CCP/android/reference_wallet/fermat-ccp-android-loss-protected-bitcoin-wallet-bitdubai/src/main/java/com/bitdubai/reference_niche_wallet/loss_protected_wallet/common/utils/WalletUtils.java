@@ -5,15 +5,13 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 
+import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
 import com.bitdubai.fermat_api.layer.all_definition.enums.CryptoCurrency;
 import com.bitdubai.fermat_api.layer.all_definition.money.CryptoAddress;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.interfaces.LossProtectedWallet;
 import com.bitdubai.reference_niche_wallet.loss_protected_wallet.common.enums.ShowMoneyType;
 
 import java.text.DecimalFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
 
 /**
  * Created by Matias Furszyfer on 2015.07.22..
@@ -75,7 +73,7 @@ public class WalletUtils {
      * @param strToValidate
      * @return
      */
-    public static CryptoAddress validateAddress(String strToValidate,LossProtectedWallet cryptoWallet) {
+    public static CryptoAddress validateAddress(String strToValidate,LossProtectedWallet cryptoWallet,BlockchainNetworkType blockchainNetworkType) {
         String[] tokens = strToValidate.split("-|\\.|:|,|;| ");
 
         CryptoAddress cryptoAddress = new CryptoAddress(null, CryptoCurrency.BITCOIN);
@@ -83,7 +81,7 @@ public class WalletUtils {
             token = token.trim();
             if (token.length() > 25 && token.length() < 40) {
                 cryptoAddress.setAddress(token);
-                if (cryptoWallet.isValidAddress(cryptoAddress)) {
+                if (cryptoWallet.isValidAddress(cryptoAddress,blockchainNetworkType)) {
                     return cryptoAddress;
                 }
             }
@@ -128,16 +126,50 @@ public class WalletUtils {
      * @return
      */
     public static String formatAmountStringWithDecimalEntry(double amount,int maxDecimal, int minDecimal) {
+
+        //check if decimal are separated by ,(samsung)
         String stringAmount = "";
 
+        String value = String.valueOf(amount).replace(",",".");
 
-        DecimalFormat df = new DecimalFormat();
-        df.setMaximumFractionDigits(maxDecimal);
-        df.setMinimumFractionDigits(minDecimal);
+            DecimalFormat df = new DecimalFormat();
+            df.setMaximumFractionDigits(maxDecimal);
+            df.setMinimumFractionDigits(minDecimal);
 
-        stringAmount =df.format(amount);//+ " BTC";
+           stringAmount = df.format(Double.parseDouble(value));
 
-        return stringAmount;
+
+        return stringAmount.replace(",",".");
+
+    }
+
+
+    /**
+     *  Formationg Amount
+     * @param amount
+     * @return
+     */
+    public static String formatBalanceStringWithDecimalEntry(long amount,int maxDecimal, int minDecimal,int typeAmount) {
+
+        String stringAmount = "";
+        //check if decimal are separated by ,(samsung)
+        String value = String.valueOf(amount).replace(",",".");
+        if(typeAmount== ShowMoneyType.BITCOIN.getCode()){
+            DecimalFormat df = new DecimalFormat();
+            df.setMaximumFractionDigits(maxDecimal);
+            df.setMinimumFractionDigits(minDecimal);
+            String BTCFormat = "";
+
+            BTCFormat = df.format(Long.parseLong(value) / 100000000.0); //
+
+            stringAmount = BTCFormat ;//+ " BTC";
+        }else if(typeAmount== ShowMoneyType.BITS.getCode()){
+            stringAmount = String.valueOf(Long.parseLong(value) / 100);
+        }
+        showMoneyType=!showMoneyType;
+
+        return stringAmount.replace(",",".");
+
     }
     /**
      *  Formationg Amount no decimal

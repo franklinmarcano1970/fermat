@@ -12,6 +12,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import com.bitdubai.fermat_android_api.layer.definition.wallet.AbstractFermatFragment;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.layer.definition.wallet.views.FermatButton;
 import com.bitdubai.fermat_android_api.layer.definition.wallet.views.FermatTextView;
 import com.bitdubai.fermat_android_api.ui.util.BitmapWorkerTask;
@@ -21,9 +22,11 @@ import com.bitdubai.fermat_api.layer.pip_engine.interfaces.ResourceProviderManag
 import com.bitdubai.fermat_cbp_api.all_definition.enums.ContractStatus;
 import com.bitdubai.fermat_cbp_api.all_definition.enums.MoneyType;
 import com.bitdubai.fermat_cbp_api.layer.wallet_module.common.interfaces.ContractBasicInformation;
+import com.bitdubai.fermat_cbp_api.layer.wallet_module.crypto_customer.interfaces.CryptoCustomerWalletModuleManager;
 import com.bitdubai.reference_wallet.crypto_customer_wallet.R;
-import com.bitdubai.reference_wallet.crypto_customer_wallet.session.CryptoCustomerWalletSession;
+import com.bitdubai.reference_wallet.crypto_customer_wallet.util.FragmentsCommons;
 
+import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 
@@ -31,9 +34,9 @@ import java.text.NumberFormat;
 /**
  * A simple {@link Fragment} subclass.
  */
-public class CloseContractDetailsFragment extends AbstractFermatFragment<CryptoCustomerWalletSession, ResourceProviderManager> {
-    private static final String TAG = "CloseContractDetails";
+public class CloseContractDetailsFragment extends AbstractFermatFragment<ReferenceAppFermatSession<CryptoCustomerWalletModuleManager>, ResourceProviderManager> {
 
+    private NumberFormat numberFormat = DecimalFormat.getInstance();
 
 
     public static CloseContractDetailsFragment newInstance() {
@@ -51,6 +54,7 @@ public class CloseContractDetailsFragment extends AbstractFermatFragment<CryptoC
         return rootView;
     }
 
+    @SuppressWarnings("deprecation")
     private void configureToolbar() {
         Toolbar toolbar = getToolbar();
 
@@ -64,32 +68,36 @@ public class CloseContractDetailsFragment extends AbstractFermatFragment<CryptoC
 
     private void initViews(View rootView) {
 
-        final ContractBasicInformation contractBasicInfo = (ContractBasicInformation) appSession.getData(CryptoCustomerWalletSession.CONTRACT_DATA);
+        final ContractBasicInformation contractBasicInfo = (ContractBasicInformation) appSession.getData(FragmentsCommons.CONTRACT_DATA);
         ContractStatus status = contractBasicInfo.getStatus();
 
-        ImageView customerImage = (ImageView) rootView.findViewById(R.id.ccw_customer_image);
-        BitmapWorkerTask imgLoader = new BitmapWorkerTask(customerImage, getResources(), R.drawable.person, false);
-        imgLoader.execute(contractBasicInfo.getCryptoCustomerImage());
+        ImageView brokerImage = (ImageView) rootView.findViewById(R.id.ccw_customer_image);
+        BitmapWorkerTask imgLoader = new BitmapWorkerTask(brokerImage, getResources(), R.drawable.person, false);
+        imgLoader.execute(contractBasicInfo.getCryptoBrokerImage());
 
-        FermatTextView customerName = (FermatTextView) rootView.findViewById(R.id.ccw_customer_name);
-        customerName.setText(contractBasicInfo.getCryptoCustomerAlias());
+        FermatTextView brokerName = (FermatTextView) rootView.findViewById(R.id.ccw_customer_name);
+        brokerName.setText(contractBasicInfo.getCryptoBrokerAlias());
 
         FermatTextView amountSoldOrToSellTitle = (FermatTextView) rootView.findViewById(R.id.ccw_amount_bought_or_wanted_to_buy_title);
         amountSoldOrToSellTitle.setText(status.equals(ContractStatus.CANCELLED) ? R.string.ccw_wanted_to_buy : R.string.ccw_you_bought);
 
         FermatTextView amountSoldOrToSellValue = (FermatTextView) rootView.findViewById(R.id.ccw_amount_bought_or_wanted_to_buy_value);
-        String amountToSell = DecimalFormat.getInstance().format(contractBasicInfo.getAmount());
+
+
+        String amountToSell = fixFormat(String.valueOf(contractBasicInfo.getAmount()));
         amountSoldOrToSellValue.setText(String.format("%1$s %2$s", amountToSell, contractBasicInfo.getMerchandise()));
 
+
         FermatTextView priceValue = (FermatTextView) rootView.findViewById(R.id.ccw_contract_details_price_value);
-        String price = NumberFormat.getInstance().format(contractBasicInfo.getExchangeRateAmount());
+        String price = fixFormat(String.valueOf(contractBasicInfo.getExchangeRateAmount()));
         priceValue.setText(String.format("%1$s %2$s/%3$s", price, contractBasicInfo.getMerchandise(), contractBasicInfo.getPaymentCurrency()));
 
         FermatTextView paymentMethod = (FermatTextView) rootView.findViewById(R.id.ccw_contract_details_payment_method);
         String typeOfPaymentStr = "";
-        try{
+        try {
             typeOfPaymentStr = MoneyType.getByCode(contractBasicInfo.getTypeOfPayment()).getFriendlyName();
-        }catch (InvalidParameterException e) {}
+        } catch (InvalidParameterException ignore) {
+        }
         paymentMethod.setText(typeOfPaymentStr);
 
         LinearLayout cancellationReasonContainer = (LinearLayout) rootView.findViewById(R.id.ccw_cancellation_reason_container);
@@ -107,9 +115,19 @@ public class CloseContractDetailsFragment extends AbstractFermatFragment<CryptoC
         checkNegotiationDetails.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                appSession.setNegotiationId(contractBasicInfo.getNegotiationId());
+                appSession.setData(FragmentsCommons.NEGOTIATION_ID, contractBasicInfo.getNegotiationId());
                 changeActivity(Activities.CBP_CRYPTO_CUSTOMER_WALLET_CLOSE_NEGOTIATION_DETAILS_CLOSE_CONTRACT, appSession.getAppPublicKey());
             }
         });
+    }
+
+
+    private String fixFormat(String value) {
+        numberFormat.setMaximumFractionDigits(compareLessThan1(value) ? 8 : 2);
+        return numberFormat.format(new BigDecimal(Double.valueOf(value)));
+    }
+
+    private Boolean compareLessThan1(String value) {
+        return BigDecimal.valueOf(Double.valueOf(value)).compareTo(BigDecimal.ONE) == -1;
     }
 }

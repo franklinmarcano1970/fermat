@@ -15,6 +15,7 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.bitdubai.fermat_android_api.layer.definition.wallet.AbstractFermatFragment;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.ui.interfaces.FermatListItemListeners;
 import com.bitdubai.fermat_android_api.ui.interfaces.FermatWorkerCallBack;
 import com.bitdubai.fermat_android_api.ui.util.FermatWorker;
@@ -22,14 +23,14 @@ import com.bitdubai.fermat_api.layer.all_definition.navigation_structure.enums.A
 import com.bitdubai.fermat_api.layer.modules.exceptions.ActorIdentityNotSelectedException;
 import com.bitdubai.fermat_api.layer.modules.exceptions.CantGetSelectedActorIdentityException;
 import com.bitdubai.fermat_art_api.all_definition.exceptions.CantGetActiveLoginIdentityException;
+import com.bitdubai.fermat_art_api.layer.sub_app_module.community.ArtCommunityInformation;
 import com.bitdubai.fermat_art_api.layer.sub_app_module.community.fan.exceptions.CantGetFanListException;
-import com.bitdubai.fermat_art_api.layer.sub_app_module.community.fan.interfaces.FanCommunityInformation;
 import com.bitdubai.fermat_art_api.layer.sub_app_module.community.fan.interfaces.FanCommunityModuleManager;
 import com.bitdubai.fermat_pip_api.layer.network_service.subapp_resources.SubAppResourcesProviderManager;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 import com.bitdubai.sub_app.fan_community.R;
 import com.bitdubai.sub_app.fan_community.adapters.AppFriendsListAdapter;
-import com.bitdubai.sub_app.fan_community.sessions.FanCommunitySubAppSession;
+import com.bitdubai.sub_app.fan_community.sessions.FanCommunitySubAppSessionReferenceApp;
 import com.bitdubai.sub_app.fan_community.util.CommonLogger;
 
 import java.util.ArrayList;
@@ -40,10 +41,10 @@ import java.util.List;
  */
 public class ConnectionsListFragment extends
         AbstractFermatFragment<
-                FanCommunitySubAppSession,
+                ReferenceAppFermatSession<FanCommunityModuleManager>,
                 SubAppResourcesProviderManager> implements
         SwipeRefreshLayout.OnRefreshListener,
-        FermatListItemListeners<FanCommunityInformation> {
+        FermatListItemListeners<ArtCommunityInformation> {
 
     public static final String ACTOR_SELECTED = "actor_selected";
     private static final int MAX = 20;
@@ -59,7 +60,7 @@ public class ConnectionsListFragment extends
     private LinearLayout emptyView;
     private FanCommunityModuleManager moduleManager;
     private ErrorManager errorManager;
-    private ArrayList<FanCommunityInformation> fanCommunityInformations;
+    private ArrayList<ArtCommunityInformation> fanCommunityInformations;
 
     public static ConnectionsListFragment newInstance() {
         return new ConnectionsListFragment();
@@ -132,7 +133,7 @@ public class ConnectionsListFragment extends
                     if (result != null &&
                             result.length > 0) {
                         if (getActivity() != null && adapter != null) {
-                            fanCommunityInformations = (ArrayList<FanCommunityInformation>) result[0];
+                            fanCommunityInformations = (ArrayList<ArtCommunityInformation>) result[0];
                             adapter.changeDataSet(fanCommunityInformations);
                             if (fanCommunityInformations.isEmpty()) {
                                 showEmpty(true, emptyView);
@@ -163,8 +164,8 @@ public class ConnectionsListFragment extends
         }
     }
 
-    private synchronized List<FanCommunityInformation> getMoreData() {
-        List<FanCommunityInformation> dataSet = new ArrayList<>();
+    private synchronized List<ArtCommunityInformation> getMoreData() {
+        List<ArtCommunityInformation> dataSet = new ArrayList<>();
         try {
             dataSet.addAll(moduleManager.listAllConnectedFans(moduleManager.getSelectedActorIdentity(), MAX, offset));
         } catch (CantGetFanListException | CantGetSelectedActorIdentityException |ActorIdentityNotSelectedException e) {
@@ -189,13 +190,13 @@ public class ConnectionsListFragment extends
     }
 
     @Override
-    public void onItemClickListener(FanCommunityInformation data, int position) {
+    public void onItemClickListener(ArtCommunityInformation data, int position) {
         appSession.setData(ACTOR_SELECTED, data);
         changeActivity(Activities.ART_SUB_APP_FAN_COMMUNITY_CONNECTION_OTHER_PROFILE.getCode(), appSession.getAppPublicKey());
     }
 
     @Override
-    public void onLongItemClickListener(FanCommunityInformation data, int position) {
+    public void onLongItemClickListener(ArtCommunityInformation data, int position) {
 
     }
 }

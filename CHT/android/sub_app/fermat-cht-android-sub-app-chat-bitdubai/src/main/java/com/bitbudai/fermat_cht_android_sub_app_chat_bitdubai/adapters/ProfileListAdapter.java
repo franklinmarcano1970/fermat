@@ -15,14 +15,14 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.fragments.ProfileListFragment;
-import com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.sessions.ChatSession;
+import com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.sessions.ChatSessionReferenceApp;
 import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.FermatSession;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedSubAppExceptionSeverity;
 import com.bitdubai.fermat_api.layer.dmp_engine.sub_app_runtime.enums.SubApps;
 import com.bitdubai.fermat_cht_android_sub_app_chat_bitdubai.R;
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.ChatManager;
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.ChatModuleManager;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedSubAppExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 
 import java.util.ArrayList;
 
@@ -31,19 +31,18 @@ import java.util.ArrayList;
  *
  * @author Jose Cardozo josejcb (josejcb89@gmail.com) on 03/03/16.
  * @version 1.0
- *
  */
 public class ProfileListAdapter extends ArrayAdapter<String> {//public class ChatListAdapter extends FermatAdapter<ChatsList, ChatHolder> {//ChatFactory
 
     //List<ContactList> contactsList = new ArrayList<>();
-    ArrayList<String> profileinfo=new ArrayList<>();
-    ArrayList<Bitmap> profileicon=new ArrayList<>();
-    ArrayList<String> profileid=new ArrayList<>();
+    ArrayList<String> profileinfo = new ArrayList<>();
+    ArrayList<Bitmap> profileicon = new ArrayList<>();
+    ArrayList<String> profileid = new ArrayList<>();
     private ChatManager chatManager;
     private FermatSession appSession;
     private ErrorManager errorManager;
     private ChatModuleManager moduleManager;
-    private ChatSession chatSession;
+    private ChatSessionReferenceApp chatSession;
     private ProfileListFragment profilesListFragment;
     private Context context;
     private Context mContext;
@@ -55,23 +54,22 @@ public class ProfileListAdapter extends ArrayAdapter<String> {//public class Cha
 
     public ProfileListAdapter(Context context, ArrayList profileinfo, ArrayList profileicon, ArrayList profileid,
                               ChatManager chatManager, ChatModuleManager moduleManager,
-                              ErrorManager errorManager, ChatSession chatSession, FermatSession appSession, AdapterCallback mAdapterCallback) {
+                              ErrorManager errorManager, ChatSessionReferenceApp chatSession, FermatSession appSession, AdapterCallback mAdapterCallback) {
         super(context, R.layout.profile_list_item, profileinfo);
         //tf = Typeface.createFromAsset(context.getAssets(), "fonts/HelveticaNeue Medium.ttf");
         this.profileinfo = profileinfo;
         this.profileicon = profileicon;
         this.profileid = profileid;
-        this.chatManager=chatManager;
-        this.moduleManager=moduleManager;
-        this.errorManager=errorManager;
-        this.chatSession=chatSession;
-        this.appSession=appSession;
-        this.mContext=context;
+        this.chatManager = chatManager;
+        this.moduleManager = moduleManager;
+        this.errorManager = errorManager;
+        this.chatSession = chatSession;
+        this.appSession = appSession;
+        this.mContext = context;
         try {
             this.mAdapterCallback = mAdapterCallback;
-        }catch (Exception e)
-        {
-            errorManager.reportUnexpectedSubAppException(SubApps.CHT_CHAT,UnexpectedSubAppExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT,e);
+        } catch (Exception e) {
+            errorManager.reportUnexpectedSubAppException(SubApps.CHT_CHAT, UnexpectedSubAppExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
         }
     }
 
@@ -86,20 +84,20 @@ public class ProfileListAdapter extends ArrayAdapter<String> {//public class Cha
             contactname.setText(profileinfo.get(position));
             //contactname.setTypeface(tf, Typeface.NORMAL);
 
-            final int pos=position;
+            final int pos = position;
             imagen.setOnClickListener(new View.OnClickListener() {
-               // int pos = position;
+                // int pos = position;
                 @Override
                 public void onClick(View v) {
                     try {
                         //TODO:Cardozo revisar esta logica ya no aplica, esto viene de un metodo nuevo que lo buscara del module del actor connections//chatManager.getChatUserIdentities();
-                            appSession.setData(ChatSession.PROFILE_DATA, null);//chatManager.getChatUserIdentity(profileid.get(pos)));
-                            mAdapterCallback.onMethodCallback();//solution to access to changeactivity. j
+                        appSession.setData(ChatSessionReferenceApp.PROFILE_DATA, null);//chatManager.getChatUserIdentity(profileid.get(pos)));
+                        mAdapterCallback.onMethodCallback();//solution to access to changeactivity. j
                         //} catch (CantGetChatUserIdentityException e) {
                         //    errorManager.reportUnexpectedSubAppException(SubApps.CHT_CHAT, UnexpectedSubAppExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
-                        } catch (Exception e) {
-                            errorManager.reportUnexpectedSubAppException(SubApps.CHT_CHAT, UnexpectedSubAppExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
-                        }
+                    } catch (Exception e) {
+                        errorManager.reportUnexpectedSubAppException(SubApps.CHT_CHAT, UnexpectedSubAppExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
+                    }
                 }
             });
 
@@ -114,13 +112,13 @@ public class ProfileListAdapter extends ArrayAdapter<String> {//public class Cha
     }
 
     public void refreshEvents(ArrayList profileinfo, ArrayList profileicon, ArrayList profileid) {
-        this.profileinfo=profileinfo;
-        this.profileicon=profileicon;
-        this.profileid=profileid;
+        this.profileinfo = profileinfo;
+        this.profileicon = profileicon;
+        this.profileid = profileid;
         notifyDataSetChanged();
     }
 
-    public static Bitmap decodeFile(Context context,int resId) {
+    public static Bitmap decodeFile(Context context, int resId) {
         // decode image size
         BitmapFactory.Options o = new BitmapFactory.Options();
         o.inJustDecodeBounds = true;
@@ -129,8 +127,7 @@ public class ProfileListAdapter extends ArrayAdapter<String> {//public class Cha
         final int REQUIRED_SIZE = 300;
         int width_tmp = o.outWidth, height_tmp = o.outHeight;
         int scale = 1;
-        while (true)
-        {
+        while (true) {
             if (width_tmp / 2 < REQUIRED_SIZE
                     || height_tmp / 2 < REQUIRED_SIZE)
                 break;
@@ -144,12 +141,12 @@ public class ProfileListAdapter extends ArrayAdapter<String> {//public class Cha
         return BitmapFactory.decodeResource(context.getResources(), resId, o2);
     }
 
-    public static Bitmap getRoundedShape(Bitmap scaleBitmapImage,int width) {
+    public static Bitmap getRoundedShape(Bitmap scaleBitmapImage, int width) {
         // TODO Auto-generated method stub
         int targetWidth = width;
         int targetHeight = width;
         Bitmap targetBitmap = Bitmap.createBitmap(targetWidth,
-                targetHeight,Bitmap.Config.ARGB_8888);
+                targetHeight, Bitmap.Config.ARGB_8888);
 
         Canvas canvas = new Canvas(targetBitmap);
         Path path = new Path();

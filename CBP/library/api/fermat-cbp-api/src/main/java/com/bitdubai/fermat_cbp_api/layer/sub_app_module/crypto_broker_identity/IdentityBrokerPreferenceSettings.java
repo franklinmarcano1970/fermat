@@ -8,23 +8,33 @@ import com.bitdubai.fermat_pip_api.all_definition.sub_app_module.settings.except
 import com.bitdubai.fermat_pip_api.all_definition.sub_app_module.settings.exceptions.CantSetDefaultSkinException;
 import com.bitdubai.fermat_pip_api.all_definition.sub_app_module.settings.interfaces.SubAppSettings;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 /**
  * Created by angel on 29/01/16.
  */
 
-public class IdentityBrokerPreferenceSettings implements SubAppSettings {
+public class IdentityBrokerPreferenceSettings implements SubAppSettings, Serializable {
 
     private boolean isHomeTutorialDialogEnabled;
+    private boolean isGpsDialogEnabled = true;
+
+    public boolean isGpsDialogEnabled() {
+        return isGpsDialogEnabled;
+    }
+
+    public void setGpsDialogEnabled(boolean isGpsDialogEnabled) {
+        this.isGpsDialogEnabled = isGpsDialogEnabled;
+    }
 
     public boolean isHomeTutorialDialogEnabled() {
         return isHomeTutorialDialogEnabled;
     }
 
-    public void setIsHomeTutorialDialogEnabled(boolean isHomeTutorialDialogEnabled) {
-        this.isHomeTutorialDialogEnabled = isHomeTutorialDialogEnabled;
-    }
+//    public void setIsHomeTutorialDialogEnabled(boolean isHomeTutorialDialogEnabled) {
+//        this.isHomeTutorialDialogEnabled = isHomeTutorialDialogEnabled;
+//    }
 
     @Override
     public UUID getDefaultLanguage() throws CantGetDefaultLanguageException {

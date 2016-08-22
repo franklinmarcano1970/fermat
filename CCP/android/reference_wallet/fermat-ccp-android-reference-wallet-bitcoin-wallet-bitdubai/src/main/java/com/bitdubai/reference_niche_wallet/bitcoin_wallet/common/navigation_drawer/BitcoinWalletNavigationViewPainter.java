@@ -8,9 +8,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
+
 import com.bitdubai.android_fermat_ccp_wallet_bitcoin.R;
+import com.bitdubai.fermat_android_api.engine.FermatApplicationCaller;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.ui.adapters.FermatAdapter;
-import com.bitdubai.fermat_api.layer.modules.common_classes.ActiveActorIdentityInformation;
 import com.bitdubai.fermat_ccp_api.layer.module.intra_user.exceptions.CantGetActiveLoginIdentityException;
 
 import java.lang.ref.WeakReference;
@@ -18,21 +20,24 @@ import java.lang.ref.WeakReference;
 /**
  * Created by Matias Furszyfer on 2015.11.24..
  */
-public class BitcoinWalletNavigationViewPainter implements com.bitdubai.fermat_android_api.engine.NavigationViewPainter {
+public class BitcoinWalletNavigationViewPainter extends com.bitdubai.fermat_android_api.engine.NavigationViewPainter {
 
-    private final ActiveActorIdentityInformation intraUserLoginIdentity;
-    private WeakReference<Context> activity;
+    //private final ActiveActorIdentityInformation intraUserLoginIdentity;
+    private WeakReference<FermatApplicationCaller> applicationsHelper;
 
-    public BitcoinWalletNavigationViewPainter(Context activity, ActiveActorIdentityInformation intraUserLoginIdentity) {
-        this.activity = new WeakReference<Context>(activity);
-        this.intraUserLoginIdentity = intraUserLoginIdentity;
+    private ReferenceAppFermatSession referenceWalletSession;
+
+    public BitcoinWalletNavigationViewPainter(Context activity, ReferenceAppFermatSession referenceWalletSession, FermatApplicationCaller applicationsHelper) {
+        super(activity);
+        this.referenceWalletSession = referenceWalletSession;
+        this.applicationsHelper = new WeakReference<FermatApplicationCaller>(applicationsHelper);
     }
 
     @Override
-    public View addNavigationViewHeader(ActiveActorIdentityInformation intraUserLoginIdentity) {
+    public View addNavigationViewHeader() {
         try {
-            return FragmentsCommons.setUpHeaderScreen((LayoutInflater) activity.get()
-                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE), activity.get(),intraUserLoginIdentity);
+            return FragmentsCommons.setUpHeaderScreen((LayoutInflater) getContext()
+                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE), getContext(),referenceWalletSession,applicationsHelper.get());
         } catch (CantGetActiveLoginIdentityException e) {
             e.printStackTrace();
         }
@@ -42,7 +47,7 @@ public class BitcoinWalletNavigationViewPainter implements com.bitdubai.fermat_a
     @Override
     public FermatAdapter addNavigationViewAdapter() {
         try {
-            NavigationViewAdapter navigationViewAdapter = new NavigationViewAdapter(activity.get());
+            NavigationViewAdapter navigationViewAdapter = new NavigationViewAdapter(getContext());
             return navigationViewAdapter;
         } catch (Exception e) {
             e.printStackTrace();
@@ -65,7 +70,7 @@ public class BitcoinWalletNavigationViewPainter implements com.bitdubai.fermat_a
             options.inScaled = true;
             options.inSampleSize = 5;
             drawable = BitmapFactory.decodeResource(
-                    activity.get().getResources(), R.drawable.bg_drawer_body,options);
+                    getContext().getResources(), R.drawable.bg_drawer_body,options);
             //drawable = ContextCompat.getDrawable(activity.getApplicationContext(), R.drawable.bg_drawer_body);
         }catch (OutOfMemoryError error){
             error.printStackTrace();

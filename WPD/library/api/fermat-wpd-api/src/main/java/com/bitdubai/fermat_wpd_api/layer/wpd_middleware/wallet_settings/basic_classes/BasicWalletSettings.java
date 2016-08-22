@@ -7,20 +7,21 @@ import com.bitdubai.fermat_wpd_api.layer.wpd_middleware.wallet_settings.exceptio
 import com.bitdubai.fermat_wpd_api.layer.wpd_middleware.wallet_settings.exceptions.CantSetDefaultSkinException;
 import com.bitdubai.fermat_wpd_api.layer.wpd_middleware.wallet_settings.interfaces.WalletSettings;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 /**
  * The class <code></code>com.bitdubai.fermat_wpd_api.layer.wpd_middleware.wallet_settings.BasicWalletSettings</code>
  * contains all the basic functionality of a wallet settings in fermat. If you want to add more functionality maybe you can
  * extend this class.
- *
+ * <p/>
  * <p/>
  * Created by Leon Acosta - (laion.cj91@gmail.com) on 18/12/2015.
  *
  * @author lnacosta
  * @version 1.0.0
  */
-public class BasicWalletSettings implements WalletSettings {
+public class BasicWalletSettings implements WalletSettings, Serializable {
 
     private boolean isHomeTutorialDialogEnabled;
 

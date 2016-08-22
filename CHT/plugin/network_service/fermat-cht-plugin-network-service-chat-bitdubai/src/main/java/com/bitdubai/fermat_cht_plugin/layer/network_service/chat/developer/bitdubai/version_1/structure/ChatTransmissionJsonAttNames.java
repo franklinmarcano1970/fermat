@@ -7,7 +7,6 @@
 package com.bitdubai.fermat_cht_plugin.layer.network_service.chat.developer.bitdubai.version_1.structure;
 
 
-
 /**
  * The Class <code>com.bitdubai.fermat_dap_plugin.layer.network.service.asset.transmission.developer.bitdubai.version_1.structure.ChatTransmissionJsonAttNames</code>
  * <p/>
@@ -32,6 +31,8 @@ public class ChatTransmissionJsonAttNames {
      */
     public final static String SENDER_TYPE = "st";
 
+    public final static String SENDER_PUBLIC_KEY = "spk";
+
     /**
      * Represent the value of RECEIVER_TYPE
      */
@@ -43,27 +44,34 @@ public class ChatTransmissionJsonAttNames {
     public final static String CHAT_METADATA = "chtd";
 
     /**
+     * Represent the value of MESSAGE_METADATA
+     */
+    public final static String MESSAGE_METADATA = "msgmtdt";
+
+    /**
      * Represent the value of NEW_DISTRIBUTION_STATUS
      */
     public final static String DISTRIBUTION_STATUS = "ds";
 
     /**
-     *  Represents the value of CHAT_STATUS
+     * Represents the value of CHAT_STATUS
      */
     public final static String CHAT_STATUS = "chtst";
 
     /**
-     *  Represents the value of MESSAGE_STATUS
+     * Represents the value of MESSAGE_STATUS
      */
     public final static String MESSAGE_STATUS = "msgst";
 
+    public final static String MESSAGE_ID = "msgid";
+
     /**
-     *  Represents the value of TRANSACTION_ID
+     * Represents the value of TRANSACTION_ID
      */
 
     public final static String TRANSACTION_ID = "transtid";
     /**
-     *  Represents the value of TRANSACTION_ID
+     * Represents the value of TRANSACTION_ID
      */
 
     public final static String PROTOCOL_STATE = "prstate";

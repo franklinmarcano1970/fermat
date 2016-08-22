@@ -9,7 +9,7 @@ import com.bitdubai.fermat_osa_addon.layer.linux.device_location.developer.bitdu
 
 /**
  * The class <code>com.bitdubai.fermat_osa_addon.layer.linux.device_location.developer.bitdubai.version_1.structure.DeviceLocationManager</code>
-
+ * <p/>
  * This addon handles a layer of Device Location representation.
  * Encapsulates all the necessary functions to retrieve the geolocation of the device.
  * <p/>
@@ -33,7 +33,10 @@ public class DeviceLocationManager implements LocationManager {
 
     @Override
     public Location getLastKnownLocation() throws CantGetDeviceLocationException {
-        return lastKnownLocation;
+        if (lastKnownLocation != null)
+            return lastKnownLocation;
+        else
+            return getLocation();
     }
 
     @Override

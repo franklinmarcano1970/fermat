@@ -1,28 +1,41 @@
 package com.bitdubai.reference_wallet.crypto_customer_wallet.common.holders.open_negotiation;
 
+import android.content.res.Resources;
 import android.text.format.DateFormat;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.bitdubai.fermat_cbp_api.all_definition.enums.ClauseType;
 import com.bitdubai.fermat_cbp_api.all_definition.enums.NegotiationStepStatus;
+import com.bitdubai.fermat_cbp_api.all_definition.util.DateTimeZone;
 import com.bitdubai.fermat_cbp_api.layer.wallet_module.common.interfaces.ClauseInformation;
 import com.bitdubai.fermat_cbp_api.layer.wallet_module.common.interfaces.CustomerBrokerNegotiationInformation;
 import com.bitdubai.reference_wallet.crypto_customer_wallet.R;
 
+import java.util.Map;
+import java.util.TimeZone;
+
+
 /**
- *Created by Yordin Alayn on 22.01.16.
+ * Created by Yordin Alayn on 22.01.16.
  * Based in DateTimeViewHolder of Star_negotiation by nelson
  */
 public class DateTimeViewHolder extends ClauseViewHolder implements View.OnClickListener {
+    private final Resources res;
 
     private Button buttonDate;
     private Button buttonTime;
     private TextView descriptionTextView;
-
+    private TextView youTimeZone;
+    private TextView otherTimeZone;
+    private View separatorLineUp;
+    private View separatorLineDown;
 
     public DateTimeViewHolder(View itemView) {
         super(itemView);
+
+        res = itemView.getResources();
 
         descriptionTextView = (TextView) itemView.findViewById(R.id.ccw_date_time_description_text);
 
@@ -30,6 +43,11 @@ public class DateTimeViewHolder extends ClauseViewHolder implements View.OnClick
         buttonDate.setOnClickListener(this);
         buttonTime = (Button) itemView.findViewById(R.id.ccw_time_value);
         buttonTime.setOnClickListener(this);
+        youTimeZone = (TextView) itemView.findViewById(R.id.ccw_text_you_time_zone);
+        otherTimeZone = (TextView) itemView.findViewById(R.id.ccw_text_other_date);
+        separatorLineDown = itemView.findViewById(R.id.ccw_line_down);
+        separatorLineUp = itemView.findViewById(R.id.ccw_line_up);
+
     }
 
     @Override
@@ -40,8 +58,29 @@ public class DateTimeViewHolder extends ClauseViewHolder implements View.OnClick
         java.text.DateFormat dateFormat = DateFormat.getDateFormat(itemView.getContext());
 
         long timeInMillis = Long.valueOf(clause.getValue());
+
         buttonTime.setText(timeFormat.format(timeInMillis));
         buttonDate.setText(dateFormat.format(timeInMillis));
+
+        Map<ClauseType, ClauseInformation> clauses = data.getClauses();
+        ClauseInformation otherTimeZoneClause = clauses.get(ClauseType.BROKER_TIME_ZONE);
+
+        if (otherTimeZoneClause != null) {
+            String yourTimeZoneValue = TimeZone.getDefault().getID();
+            String otherTimeZoneValue = otherTimeZoneClause.getValue();
+
+            if (!yourTimeZoneValue.equals(otherTimeZoneValue)) {
+
+                youTimeZone.setVisibility(View.VISIBLE);
+                otherTimeZone.setVisibility(View.VISIBLE);
+
+                DateTimeZone otherTimeZoneDate = new DateTimeZone(otherTimeZoneValue, timeInMillis, "MM/dd/yyyy hh:mm a");
+
+                youTimeZone.setText(res.getString(R.string.ccw_time_zone, yourTimeZoneValue));
+                otherTimeZone.setText(res.getString(R.string.ccw_broker_date, otherTimeZoneDate.getDate(), otherTimeZoneValue));
+            }
+        }
+
     }
 
     @Override
@@ -49,6 +88,7 @@ public class DateTimeViewHolder extends ClauseViewHolder implements View.OnClick
         titleTextView.setText(titleRes);
         clauseNumberImageView.setImageResource(positionImgRes);
         descriptionTextView.setText(stringResources[0]);
+
     }
 
     @Override
@@ -78,9 +118,17 @@ public class DateTimeViewHolder extends ClauseViewHolder implements View.OnClick
 
         switch (stepStatus) {
             case ACCEPTED:
+                separatorLineDown.setBackgroundColor(getColor(R.color.card_title_color_status_accepted));
+                separatorLineUp.setBackgroundColor(getColor(R.color.card_title_color_status_accepted));
+                youTimeZone.setTextColor(getColor(R.color.card_title_color_status_accepted));
+                otherTimeZone.setTextColor(getColor(R.color.card_title_color_status_accepted));
                 descriptionTextView.setTextColor(getColor(R.color.card_title_color_status_accepted));
                 break;
             case CHANGED:
+                separatorLineDown.setBackgroundColor(getColor(R.color.card_title_color_status_changed));
+                separatorLineUp.setBackgroundColor(getColor(R.color.card_title_color_status_changed));
+                youTimeZone.setTextColor(getColor(R.color.card_title_color_status_changed));
+                otherTimeZone.setTextColor(getColor(R.color.card_title_color_status_changed));
                 descriptionTextView.setTextColor(getColor(R.color.card_title_color_status_changed));
                 break;
             case CONFIRM:

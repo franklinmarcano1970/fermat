@@ -10,19 +10,22 @@ import android.view.ViewGroup;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.layer.definition.wallet.views.FermatTextView;
+import com.bitdubai.fermat_android_api.ui.Views.PresentationDialog;
 import com.bitdubai.fermat_android_api.ui.adapters.FermatAdapter;
 import com.bitdubai.fermat_android_api.ui.enums.FermatRefreshTypes;
 import com.bitdubai.fermat_android_api.ui.fragments.FermatWalletListFragment;
 import com.bitdubai.fermat_android_api.ui.interfaces.FermatListItemListeners;
 import com.bitdubai.fermat_android_api.ui.util.FermatDividerItemDecoration;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedWalletExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.enums.FiatCurrency;
 import com.bitdubai.fermat_api.layer.all_definition.navigation_structure.enums.Activities;
 import com.bitdubai.fermat_api.layer.all_definition.navigation_structure.enums.Wallets;
 import com.bitdubai.fermat_api.layer.all_definition.settings.exceptions.CantGetSettingsException;
 import com.bitdubai.fermat_api.layer.all_definition.settings.exceptions.SettingsNotFoundException;
-import com.bitdubai.fermat_api.layer.all_definition.settings.structure.SettingsManager;
-
+import com.bitdubai.fermat_api.layer.pip_engine.interfaces.ResourceProviderManager;
 import com.bitdubai.fermat_csh_api.all_definition.constants.CashMoneyWalletBroadcasterConstants;
 import com.bitdubai.fermat_csh_api.all_definition.enums.BalanceType;
 import com.bitdubai.fermat_csh_api.all_definition.enums.TransactionType;
@@ -31,33 +34,28 @@ import com.bitdubai.fermat_csh_api.layer.csh_wallet.exceptions.CantGetCashMoneyW
 import com.bitdubai.fermat_csh_api.layer.csh_wallet.interfaces.CashMoneyWalletTransaction;
 import com.bitdubai.fermat_csh_api.layer.csh_wallet_module.exceptions.CantGetCashMoneyWalletBalancesException;
 import com.bitdubai.fermat_csh_api.layer.csh_wallet_module.interfaces.CashMoneyWalletModuleManager;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedWalletExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 import com.bitdubai.reference_wallet.cash_money_wallet.R;
 import com.bitdubai.reference_wallet.cash_money_wallet.common.adapters.TransactionsAdapter;
 import com.bitdubai.reference_wallet.cash_money_wallet.common.dialogs.CreateTransactionFragmentDialog;
-import com.bitdubai.fermat_csh_api.layer.csh_wallet_module.CashMoneyWalletPreferenceSettings;
-import com.bitdubai.reference_wallet.cash_money_wallet.common.dialogs.HomeTutorialFragmentDialog;
-import com.bitdubai.reference_wallet.cash_money_wallet.session.CashMoneyWalletSession;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
-import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by Alejandro Bicelis on 12/9/2015.
  */
-public class HomeFragment extends FermatWalletListFragment<CashMoneyWalletTransaction>
-implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.OnDismissListener {
+public class HomeFragment extends FermatWalletListFragment<CashMoneyWalletTransaction, ReferenceAppFermatSession<CashMoneyWalletModuleManager>, ResourceProviderManager>
+        implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.OnDismissListener {
 
     protected final String TAG = "HomeFragment";
+    private Thread refresherThread;
+    private boolean threadIsRunning = false;
+
 
     // Fermat Managers
-    private CashMoneyWalletSession walletSession;
     private CashMoneyWalletModuleManager moduleManager;
-    private SettingsManager<CashMoneyWalletPreferenceSettings> settingsManager;
     private ErrorManager errorManager;
 
     //Data
@@ -78,8 +76,9 @@ implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.
     com.getbase.floatingactionbutton.FloatingActionsMenu fab;
     com.getbase.floatingactionbutton.FloatingActionButton fabWithdraw;
     CreateTransactionFragmentDialog transactionFragmentDialog;
-    HomeTutorialFragmentDialog homeTutorialDialog;
-    private static final DecimalFormat decimalFormat = (DecimalFormat) NumberFormat.getInstance();
+    private static final DecimalFormat moneyFormat = new DecimalFormat("#,##0.00");
+    private PresentationDialog homeTutorialPresentationDialog;
+
 
     public HomeFragment() {}
     public static HomeFragment newInstance() {return new HomeFragment();}
@@ -89,17 +88,27 @@ implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.
         super.onCreate(savedInstanceState);
 
         try {
-            walletSession = ((CashMoneyWalletSession) appSession);
-            moduleManager = walletSession.getModuleManager();
-            settingsManager = moduleManager.getSettingsManager();
+            moduleManager = appSession.getModuleManager();
             errorManager = appSession.getErrorManager();
         } catch (Exception e) {
             if (errorManager != null)
                 errorManager.reportUnexpectedWalletException(Wallets.CSH_CASH_WALLET, UnexpectedWalletExceptionSeverity.DISABLES_THIS_FRAGMENT, e);
         }
 
+        //Set up presentation dialog
+        homeTutorialPresentationDialog = new PresentationDialog.Builder(getActivity(), appSession)
+                .setTemplateType(PresentationDialog.TemplateType.TYPE_PRESENTATION_WITHOUT_IDENTITIES)
+                .setBannerRes(R.drawable.csh_banner)
+                .setIconRes(R.drawable.csh_wallet_logo)
+                .setSubTitle(R.string.csh_home_tut_present_dialog_sub_title)
+                .setBody(R.string.csh_home_tut_present_dialog_body)
+                .setVIewColor(R.color.csh_color_dialog)
+                .setIsCheckEnabled(false)
+                .build();
+        homeTutorialPresentationDialog.setOnDismissListener(this);
+
         //Get wallet transactions, balances and currency
-        transactionList = (ArrayList) getMoreDataAsync(FermatRefreshTypes.NEW, 0);
+        onRefresh();
         getWalletBalances();
         getWalletCurrency();
     }
@@ -131,7 +140,6 @@ implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.
 
         //Set up no_transactions view
         noTransactionsView = layout.findViewById(R.id.no_transactions);
-        showOrHideNoTransactionsView(transactionList.isEmpty());
 
         layout.findViewById(R.id.fab_withdraw).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -150,11 +158,11 @@ implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.
 
         boolean showHomeTutorial = false;
         try{
-            showHomeTutorial = settingsManager.loadAndGetSettings(walletSession.getAppPublicKey()).isHomeTutorialDialogEnabled();
+            showHomeTutorial = moduleManager.loadAndGetSettings(appSession.getAppPublicKey()).isHomeTutorialDialogEnabled();
         } catch (CantGetSettingsException | SettingsNotFoundException  e){}
 
         if(showHomeTutorial)
-            lauchHomeTutorialDialog();
+            homeTutorialPresentationDialog.show();
 
 
     }
@@ -225,8 +233,8 @@ implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.
         }
     }*/
 
-    private void showOrHideNoTransactionsView(boolean show) {
-        if (show) {
+    private void showOrHideNoTransactionsView(ArrayList<CashMoneyWalletTransaction> transactions) {
+        if (transactions == null || transactions.isEmpty()) {
             recyclerView.setVisibility(View.GONE);
             noTransactionsView.setVisibility(View.VISIBLE);
         } else {
@@ -254,13 +262,13 @@ implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.
                 transactionList = (ArrayList) result[0];
                 if (adapter != null)
                     adapter.changeDataSet(transactionList);
-
-                getWalletBalances();
-                updateWalletBalances();
-                handleWidhtrawalFabVisibilityAccordingToBalance();
-                showOrHideNoTransactionsView(transactionList.isEmpty());
             }
         }
+
+        getWalletBalances();
+        updateWalletBalances();
+        handleWidhtrawalFabVisibilityAccordingToBalance();
+        showOrHideNoTransactionsView(transactionList);
     }
 
     @Override
@@ -274,16 +282,10 @@ implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.
 
     /* MISC FUNCTIONS */
     private void lauchCreateTransactionDialog(TransactionType transactionType){
-        transactionFragmentDialog = new CreateTransactionFragmentDialog(getActivity(), (CashMoneyWalletSession) appSession, getResources(), transactionType, null, null);
+        transactionFragmentDialog = new CreateTransactionFragmentDialog(getActivity(), appSession, getResources(), transactionType, null, null);
         transactionFragmentDialog.setOnDismissListener(this);
         transactionFragmentDialog.show();
     }
-    private void lauchHomeTutorialDialog(){
-        homeTutorialDialog = new HomeTutorialFragmentDialog(getActivity(), (CashMoneyWalletSession) appSession, getResources());
-        homeTutorialDialog.setOnDismissListener(this);
-        homeTutorialDialog.show();
-    }
-
 
 
     @Override
@@ -312,15 +314,22 @@ implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.
 
         if (moduleManager != null) {
             try {
-                data.addAll(moduleManager.getPendingTransactions());
-                data.addAll(moduleManager.getTransactions(walletSession.getAppPublicKey(), transactionTypes, balanceTypes, 100, 0));
+                List<CashMoneyWalletTransaction> pendingTransactions = moduleManager.getPendingTransactions();
+
+                if(!pendingTransactions.isEmpty())
+                    startRefresh();
+                else
+                    stopRefresh();
+
+                data.addAll(pendingTransactions);
+                data.addAll(moduleManager.getTransactions(appSession.getAppPublicKey(), transactionTypes, balanceTypes, 100, 0));
 
             } catch (Exception ex) {
                 if (errorManager != null)
                     errorManager.reportUnexpectedWalletException(Wallets.CSH_CASH_WALLET, UnexpectedWalletExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, ex);
             }
         } else {
-            Toast.makeText(getActivity(), "Sorry, an error happened in HomeFragment (Module == null)", Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity(), getResources().getString(R.string.cash_error_msg_std), Toast.LENGTH_SHORT).show();
         }
         return data;
     }
@@ -330,14 +339,14 @@ implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.
 
     private void getWalletBalances() {
         try {
-            this.walletBalances = moduleManager.getWalletBalances(walletSession.getAppPublicKey());
+            this.walletBalances = moduleManager.getWalletBalances(appSession.getAppPublicKey());
         } catch (CantGetCashMoneyWalletBalancesException e) {
             errorManager.reportUnexpectedWalletException(Wallets.CSH_CASH_WALLET, UnexpectedWalletExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
         }
     }
     private void getWalletCurrency() {
         try {
-            this.walletCurrency = moduleManager.getWalletCurrency(walletSession.getAppPublicKey());
+            this.walletCurrency = moduleManager.getWalletCurrency(appSession.getAppPublicKey());
         } catch (CantGetCashMoneyWalletCurrencyException e) {
             errorManager.reportUnexpectedWalletException(Wallets.CSH_CASH_WALLET, UnexpectedWalletExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
         }
@@ -345,8 +354,9 @@ implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.
 
     private void updateWalletBalances() {
 
-        bookTextView.setText(String.valueOf(this.walletBalances.getBookBalance()));
-        availableTextView.setText(String.valueOf(this.walletBalances.getAvailableBalance()));
+
+        bookTextView.setText(moneyFormat.format(this.walletBalances.getBookBalance()));
+        availableTextView.setText(moneyFormat.format(this.walletBalances.getAvailableBalance()));
         int topLipHeight = 0;
 
         //Hide book balance if balances are equal
@@ -387,7 +397,7 @@ implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.
     private void handleWidhtrawalFabVisibilityAccordingToBalance()
     {
         if(this.walletBalances.getAvailableBalance().compareTo(new BigDecimal(0)) == 0 && this.walletBalances.getBookBalance().compareTo(new BigDecimal(0)) == 0)
-            fabWithdraw.setVisibility(View.INVISIBLE);
+            fabWithdraw.setVisibility(View.GONE);
         else
             fabWithdraw.setVisibility(View.VISIBLE);
 
@@ -431,21 +441,72 @@ implements FermatListItemListeners<CashMoneyWalletTransaction>, DialogInterface.
     @Override
     public void onUpdateViewOnUIThread(String code) {
         switch (code) {
-            case CashMoneyWalletBroadcasterConstants.CSH_REFERENCE_WALLET_UPDATE_TRANSACTION_VIEW:
-                onRefresh();
-                break;
+            //Nod depending on broadcaster to update screen when transaction finished
+            //Instead im using determinate progressbars, updated by a refresher thread.
+            //case CashMoneyWalletBroadcasterConstants.CSH_REFERENCE_WALLET_UPDATE_TRANSACTION_VIEW:
+            //onRefresh();
+            //break;
             case CashMoneyWalletBroadcasterConstants.CSH_REFERENCE_WALLET_UPDATE_TRANSACTION_VIEW_INSUFICCIENT_FUNDS:
-                Toast.makeText(getActivity(), "Transaction failed due to insufficient funds", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), getResources().getString(R.string.cash_error_msg_transaction_failed_insufficient_funds), Toast.LENGTH_SHORT).show();
 
                 onRefresh();
                 break;
             case CashMoneyWalletBroadcasterConstants.CSH_REFERENCE_WALLET_UPDATE_TRANSACTION_VIEW_TRANSACTION_FAILED:
-                Toast.makeText(getActivity(), "Sorry, the transaction has failed.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getActivity(), getResources().getString(R.string.cash_error_msg_transaction_failed), Toast.LENGTH_SHORT).show();
                 onRefresh();
                 break;
             default:
                 super.onUpdateViewOnUIThread(code);
         }
     }
+
+
+
+
+    /* Refresher thread code */
+    public final void startRefresh() {
+
+        if(!threadIsRunning) {
+            try { Thread.sleep(500); } catch (InterruptedException interruptedException) {}
+
+            this.refresherThread = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while (threadIsRunning)
+                        doRefresh();
+                }
+            });
+            threadIsRunning = true;
+            this.refresherThread.start();
+        }
+    }
+
+    public final void stopRefresh() {
+
+        if (threadIsRunning)
+            this.refresherThread.interrupt();
+        threadIsRunning = false;
+    }
+
+    private void doRefresh() {
+
+        while (threadIsRunning) {
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException interruptedException) {
+                threadIsRunning = false;
+                return;
+            }
+
+            if (refresherThread.isInterrupted()) {
+                threadIsRunning = false;
+                return;
+            }
+
+            onRefresh();
+        }
+    }
+
 }
 

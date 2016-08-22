@@ -7,13 +7,14 @@ import com.bitdubai.fermat_cbp_api.layer.negotiation.customer_broker_purchase.in
 import com.bitdubai.fermat_cbp_api.layer.negotiation.exceptions.CantGetListClauseException;
 import com.bitdubai.fermat_cbp_api.layer.wallet_module.common.interfaces.ContractBasicInformation;
 
+import java.io.Serializable;
 import java.util.Calendar;
 import java.util.UUID;
 
 /**
  * Created by nelson on 11/11/15.
  */
-public class CryptoBrokerWalletModuleContractBasicInformation implements ContractBasicInformation {
+public class CryptoBrokerWalletModuleContractBasicInformation implements ContractBasicInformation, Serializable {
 
     private static Calendar instance = Calendar.getInstance();
 
@@ -58,17 +59,16 @@ public class CryptoBrokerWalletModuleContractBasicInformation implements Contrac
             try {
                 for (Clause clause : customerBrokerPurchaseNegotiation.getClauses()) {
                     if (clause.getType() == ClauseType.CUSTOMER_CURRENCY_QUANTITY) {
-                        amount = Float.valueOf(clause.getValue().replace(",",""));
+                        amount = Float.valueOf(clause.getValue().replace(",", ""));
                     }
-                    if (clause.getType()== ClauseType.EXCHANGE_RATE) {
-                        exchangeRateAmount = Float.valueOf(clause.getValue().replace(",",""));
+                    if (clause.getType() == ClauseType.EXCHANGE_RATE) {
+                        exchangeRateAmount = Float.valueOf(clause.getValue().replace(",", ""));
                     }
                 }
             } catch (CantGetListClauseException e) {
                 e.printStackTrace();
             }
-        }
-        else{
+        } else {
             this.cancellationReason = "";
             negotiationId = UUID.randomUUID();
             date = instance.getTimeInMillis();
@@ -83,7 +83,9 @@ public class CryptoBrokerWalletModuleContractBasicInformation implements Contrac
     }
 
     @Override
-    public byte[] getCryptoCustomerImage() { return customerImage; }
+    public byte[] getCryptoCustomerImage() {
+        return customerImage;
+    }
 
     @Override
     public String getCryptoBrokerAlias() {

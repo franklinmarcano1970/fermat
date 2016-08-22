@@ -2,10 +2,10 @@ package org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.issuer_appr
 
 import com.bitdubai.fermat_api.Agent;
 import com.bitdubai.fermat_api.CantStartAgentException;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.enums.Actors;
 import com.bitdubai.fermat_api.layer.all_definition.enums.CryptoCurrencyVault;
 import com.bitdubai.fermat_api.layer.all_definition.enums.Platforms;
-import com.bitdubai.fermat_api.layer.all_definition.enums.Plugins;
 import com.bitdubai.fermat_api.layer.all_definition.enums.ReferenceWallet;
 import com.bitdubai.fermat_api.layer.all_definition.enums.ServiceStatus;
 import com.bitdubai.fermat_api.layer.all_definition.enums.VaultType;
@@ -15,13 +15,19 @@ import com.bitdubai.fermat_api.layer.all_definition.money.CryptoAddress;
 import com.bitdubai.fermat_api.layer.all_definition.transaction_transference_protocol.crypto_transactions.CryptoStatus;
 import com.bitdubai.fermat_api.layer.all_definition.transaction_transference_protocol.crypto_transactions.CryptoTransaction;
 import com.bitdubai.fermat_api.layer.all_definition.transaction_transference_protocol.crypto_transactions.CryptoTransactionType;
+import com.bitdubai.fermat_api.layer.all_definition.util.Validate;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.PluginDatabaseSystem;
+import com.bitdubai.fermat_api.layer.osa_android.location_system.Location;
+import com.bitdubai.fermat_api.layer.osa_android.location_system.LocationManager;
+import com.bitdubai.fermat_api.layer.osa_android.location_system.exceptions.CantGetDeviceLocationException;
 import com.bitdubai.fermat_api.layer.osa_android.logger_system.LogManager;
 import com.bitdubai.fermat_bch_api.layer.crypto_module.crypto_address_book.interfaces.CryptoAddressBookManager;
 import com.bitdubai.fermat_bch_api.layer.crypto_network.bitcoin.exceptions.CantGetCryptoTransactionException;
-import com.bitdubai.fermat_bch_api.layer.crypto_network.bitcoin.interfaces.BitcoinNetworkManager;
+
+import com.bitdubai.fermat_bch_api.layer.crypto_network.manager.BlockchainManager;
 import com.bitdubai.fermat_bch_api.layer.crypto_vault.asset_vault.interfaces.AssetVaultManager;
-import com.bitdubai.fermat_bch_api.layer.crypto_vault.bitcoin_vault.CryptoVaultManager;
+import com.bitdubai.fermat_bch_api.layer.crypto_vault.currency_vault.CryptoVaultManager;
+import com.bitdubai.fermat_ccp_api.all_definition.enums.Frequency;
 import com.bitdubai.fermat_ccp_api.layer.actor.Actor;
 import com.bitdubai.fermat_ccp_api.layer.actor.extra_user.exceptions.CantCreateExtraUserException;
 import com.bitdubai.fermat_ccp_api.layer.actor.extra_user.exceptions.CantGetExtraUserException;
@@ -31,9 +37,10 @@ import com.bitdubai.fermat_ccp_api.layer.identity.intra_user.exceptions.CantCrea
 import com.bitdubai.fermat_ccp_api.layer.identity.intra_user.exceptions.CantListIntraWalletUsersException;
 import com.bitdubai.fermat_ccp_api.layer.identity.intra_user.interfaces.IntraWalletUserIdentity;
 import com.bitdubai.fermat_ccp_api.layer.identity.intra_user.interfaces.IntraWalletUserIdentityManager;
-import org.fermat.fermat_dap_api.layer.all_definition.digital_asset.DigitalAssetMetadata;
 
-import com.bitdubai.fermat_api.layer.all_definition.util.Validate;
+import org.bitcoinj.core.ECKey;
+import org.bitcoinj.core.Transaction;
+import org.fermat.fermat_dap_api.layer.all_definition.digital_asset.DigitalAssetMetadata;
 import org.fermat.fermat_dap_api.layer.dap_actor.asset_issuer.interfaces.ActorAssetIssuer;
 import org.fermat.fermat_dap_api.layer.dap_actor.asset_issuer.interfaces.ActorAssetIssuerManager;
 import org.fermat.fermat_dap_api.layer.dap_transaction.asset_appropriation.exceptions.CantLoadAssetAppropriationTransactionListException;
@@ -53,8 +60,6 @@ import org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.issuer_appro
 import org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.issuer_appropriation.developer.version_1.exceptions.CantLoadIssuerAppropriationEventListException;
 import org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.issuer_appropriation.developer.version_1.structure.database.IssuerAppropriationDAO;
 import org.fermat.fermat_dap_plugin.layer.digital_asset_transaction.issuer_appropriation.developer.version_1.structure.functional.IssuerAppropriationVault;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 
 import java.util.List;
 import java.util.UUID;
@@ -72,20 +77,20 @@ public class IssuerAppropriationMonitorAgent implements Agent {
         this.status = ServiceStatus.CREATED;
     }
 
-    private final ErrorManager errorManager;
+    IssuerAppropriationDigitalAssetTransactionPluginRoot issuerAppropriationDigitalAssetTransactionPluginRoot;
     private final LogManager logManager;
     private final PluginDatabaseSystem pluginDatabaseSystem;
     private final IssuerAppropriationVault assetVault;
     private final UUID pluginId;
     private final AssetVaultManager assetVaultManager;
-    private final BitcoinNetworkManager bitcoinNetworkManager;
+    private final BlockchainManager<ECKey, Transaction> bitcoinNetworkManager;
     private final CryptoAddressBookManager cryptoAddressBookManager;
     private final CryptoVaultManager cryptoVaultManager;
     private final IntraWalletUserIdentityManager intraWalletUserIdentityManager;
     private final AssetIssuerWalletManager assetIssuerWalletManager;
     private final ExtraUserManager extraUserManager;
     private final ActorAssetIssuerManager issuerManager;
-
+    private final LocationManager locationManager;
 
     private AppropriationAgent appropriationAgent;
     //VARIABLES ACCESSED BY AGENT INNER CLASS.
@@ -99,20 +104,21 @@ public class IssuerAppropriationMonitorAgent implements Agent {
     public IssuerAppropriationMonitorAgent(IssuerAppropriationVault assetVault,
                                            PluginDatabaseSystem pluginDatabaseSystem,
                                            LogManager logManager,
-                                           ErrorManager errorManager,
+                                           IssuerAppropriationDigitalAssetTransactionPluginRoot issuerAppropriationDigitalAssetTransactionPluginRoot,
                                            UUID pluginId,
                                            AssetVaultManager assetVaultManager,
-                                           BitcoinNetworkManager bitcoinNetworkManager,
+                                           BlockchainManager<ECKey, Transaction> bitcoinNetworkManager,
                                            CryptoAddressBookManager cryptoAddressBookManager,
                                            CryptoVaultManager cryptoVaultManager,
                                            IntraWalletUserIdentityManager intraWalletUserIdentityManager,
                                            AssetIssuerWalletManager assetIssuerWalletManager,
                                            ExtraUserManager extraUserManager,
-                                           ActorAssetIssuerManager issuerManager) throws CantSetObjectException {
+                                           ActorAssetIssuerManager issuerManager,
+                                           LocationManager locationManager) throws CantSetObjectException {
         this.assetVault = assetVault;
         this.pluginDatabaseSystem = Validate.verifySetter(pluginDatabaseSystem, "pluginDatabaseSystem is null");
         this.logManager = Validate.verifySetter(logManager, "logManager is null");
-        this.errorManager = Validate.verifySetter(errorManager, "errorManager is null");
+        this.issuerAppropriationDigitalAssetTransactionPluginRoot = Validate.verifySetter(issuerAppropriationDigitalAssetTransactionPluginRoot, "errorManager is null");
         this.pluginId = Validate.verifySetter(pluginId, "pluginId is null");
         this.assetVaultManager = Validate.verifySetter(assetVaultManager, "assetVaultManager is null");
         this.bitcoinNetworkManager = Validate.verifySetter(bitcoinNetworkManager, "bitcoinNetworkManager is null");
@@ -122,6 +128,7 @@ public class IssuerAppropriationMonitorAgent implements Agent {
         this.assetIssuerWalletManager = Validate.verifySetter(assetIssuerWalletManager, "assetIssuerWalletManager is null");
         this.extraUserManager = Validate.verifySetter(extraUserManager, "extraUserManager is null");
         this.issuerManager = Validate.verifySetter(issuerManager, "issuerManager is null");
+        this.locationManager = Validate.verifySetter(locationManager, "locationManager is null");
     }
 
     //PUBLIC METHODS
@@ -136,6 +143,7 @@ public class IssuerAppropriationMonitorAgent implements Agent {
             Thread eventThread = new Thread(appropriationAgent, "Issuer Appropriation MonitorAgent");
             eventThread.start();
         } catch (Exception e) {
+            issuerAppropriationDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantStartAgentException();
         }
         this.status = ServiceStatus.STARTED;
@@ -149,7 +157,7 @@ public class IssuerAppropriationMonitorAgent implements Agent {
         try {
             latch.await(); //WAIT UNTIL THE LAST RUN FINISH
         } catch (InterruptedException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_ASSET_APPROPRIATION_TRANSACTION, UnexpectedPluginExceptionSeverity.NOT_IMPORTANT, e);
+            issuerAppropriationDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
         }
         appropriationAgent = null; //RELEASE RESOURCES.
         logManager.log(IssuerAppropriationDigitalAssetTransactionPluginRoot.getLogLevelByClass(this.getClass().getName()), "Asset Appropriation Protocol Notification Agent: successfully stopped...", null, null);
@@ -183,13 +191,12 @@ public class IssuerAppropriationMonitorAgent implements Agent {
                     /*If this happen there's a chance that the information remains
                     in a corrupt state. That probably would be fixed in a next run.
                     */
-                    errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_ASSET_APPROPRIATION_TRANSACTION, UnexpectedPluginExceptionSeverity.NOT_IMPORTANT, e);
+                    issuerAppropriationDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
                 } catch (Exception e) {
+                    issuerAppropriationDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
                     e.printStackTrace();
-                    errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_ASSET_APPROPRIATION_TRANSACTION, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
                 }
             }
-
             latch.countDown();
         }
 
@@ -199,13 +206,13 @@ public class IssuerAppropriationMonitorAgent implements Agent {
                 statusMonitoring(dao);
 
             } catch (InvalidParameterException | CantRegisterDebitException | CantLoadWalletException | CantGetCryptoTransactionException e) {
-                errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_ASSET_APPROPRIATION_TRANSACTION, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+                issuerAppropriationDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             } catch (CantLoadIssuerAppropriationEventListException | CantGetTransactionsException | CantLoadAssetAppropriationTransactionListException e) {
-                errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_ASSET_APPROPRIATION_TRANSACTION, UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+                issuerAppropriationDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             } catch (RecordsNotFoundException e) {
-                errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_ASSET_APPROPRIATION_TRANSACTION, UnexpectedPluginExceptionSeverity.NOT_IMPORTANT, e);
+                issuerAppropriationDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             } catch (Exception e) {
-                errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_ASSET_APPROPRIATION_TRANSACTION, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+                issuerAppropriationDigitalAssetTransactionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             }
         }
 
@@ -316,8 +323,13 @@ public class IssuerAppropriationMonitorAgent implements Agent {
             for (IntraWalletUserIdentity identity : allIdentities) {
                 if (identity.getAlias().equals(alias)) assetIdentity = identity;
             }
-            if (assetIdentity == null)
-                assetIdentity = intraWalletUserIdentityManager.createNewIntraWalletUser(alias, null);
+
+            try {
+                if (assetIdentity == null)
+                assetIdentity = intraWalletUserIdentityManager.createNewIntraWalletUser(alias, null, Long.parseLong("0"), Frequency.NONE, getLocationManager());
+        } catch (CantGetDeviceLocationException e) {
+            e.printStackTrace();
+        }
             return assetIdentity;
         }
 
@@ -328,6 +340,10 @@ public class IssuerAppropriationMonitorAgent implements Agent {
                 byte[] image = digitalAssetMetadata.getDigitalAsset().getResources().isEmpty() ? new byte[0] : digitalAssetMetadata.getDigitalAsset().getResources().get(0).getResourceBinayData();
                 return extraUserManager.createActor(digitalAssetMetadata.getDigitalAsset().getName(), image);
             }
+        }
+
+        private Location getLocationManager() throws CantGetDeviceLocationException {
+            return locationManager.getLocation();
         }
     }
 }

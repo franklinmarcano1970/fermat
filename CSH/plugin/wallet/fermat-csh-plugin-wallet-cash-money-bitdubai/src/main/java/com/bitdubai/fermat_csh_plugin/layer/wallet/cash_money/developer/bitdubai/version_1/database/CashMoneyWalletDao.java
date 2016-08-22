@@ -1,11 +1,10 @@
 package com.bitdubai.fermat_csh_plugin.layer.wallet.cash_money.developer.bitdubai.version_1.database;
 
 import com.bitdubai.fermat_api.FermatException;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.enums.FiatCurrency;
-import com.bitdubai.fermat_api.layer.all_definition.enums.Plugins;
 import com.bitdubai.fermat_api.layer.all_definition.exceptions.InvalidParameterException;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.Database;
-import com.bitdubai.fermat_api.layer.osa_android.database_system.DatabaseFilterOperator;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.DatabaseFilterType;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.DatabaseTable;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.DatabaseTableFilter;
@@ -30,12 +29,11 @@ import com.bitdubai.fermat_csh_api.layer.csh_wallet.exceptions.CantRegisterCredi
 import com.bitdubai.fermat_csh_api.layer.csh_wallet.exceptions.CantRegisterDebitException;
 import com.bitdubai.fermat_csh_api.layer.csh_wallet.exceptions.CashMoneyWalletDoesNotExistException;
 import com.bitdubai.fermat_csh_api.layer.csh_wallet.interfaces.CashMoneyWalletTransaction;
+import com.bitdubai.fermat_csh_plugin.layer.wallet.cash_money.developer.bitdubai.version_1.WalletCashMoneyPluginRoot;
 import com.bitdubai.fermat_csh_plugin.layer.wallet.cash_money.developer.bitdubai.version_1.exceptions.CantInitializeCashMoneyWalletDatabaseException;
 import com.bitdubai.fermat_csh_plugin.layer.wallet.cash_money.developer.bitdubai.version_1.exceptions.CantRegisterCashMoneyWalletTransactionException;
 import com.bitdubai.fermat_csh_plugin.layer.wallet.cash_money.developer.bitdubai.version_1.exceptions.CashMoneyWalletInconsistentTableStateException;
 import com.bitdubai.fermat_csh_plugin.layer.wallet.cash_money.developer.bitdubai.version_1.structure.CashMoneyWalletTransactionImpl;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -46,21 +44,22 @@ import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+
 /**
  * Created by Alejandro Bicelis on 11/23/2015.
  */
 public class CashMoneyWalletDao {
 
-    private final ErrorManager errorManager;
+    private final WalletCashMoneyPluginRoot pluginRoot;
     private final PluginDatabaseSystem pluginDatabaseSystem;
     private final UUID pluginId;
 
     private Database database;
 
-    public CashMoneyWalletDao(final PluginDatabaseSystem pluginDatabaseSystem, final UUID pluginId, final ErrorManager errorManager) {
+    public CashMoneyWalletDao(final PluginDatabaseSystem pluginDatabaseSystem, final UUID pluginId, final WalletCashMoneyPluginRoot pluginRoot) {
         this.pluginDatabaseSystem = pluginDatabaseSystem;
         this.pluginId = pluginId;
-        this.errorManager = errorManager;
+        this.pluginRoot = pluginRoot;
     }
 
     public void initialize() throws CantInitializeCashMoneyWalletDatabaseException {
@@ -71,15 +70,14 @@ public class CashMoneyWalletDao {
             try {
                 database = databaseFactory.createDatabase(pluginId, pluginId.toString());
             } catch (CantCreateDatabaseException cantCreateDatabaseException) {
-                errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_CSH_WALLET_CASH_MONEY, UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, cantCreateDatabaseException);
-                errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_CSH_WALLET_CASH_MONEY, UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, cantCreateDatabaseException);
+                pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, cantCreateDatabaseException);
                 throw new CantInitializeCashMoneyWalletDatabaseException("Database could not be opened", cantCreateDatabaseException, "Database Name: " + pluginId.toString(), "");
             }
         } catch (CantOpenDatabaseException cantOpenDatabaseException) {
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_CSH_WALLET_CASH_MONEY, UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, cantOpenDatabaseException);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, cantOpenDatabaseException);
             throw new CantInitializeCashMoneyWalletDatabaseException("Database could not be opened", cantOpenDatabaseException, "Database Name: " + pluginId.toString(), "");
         } catch (Exception e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_CSH_WALLET_CASH_MONEY, UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
             throw new CantInitializeCashMoneyWalletDatabaseException("Database could not be opened", FermatException.wrapException(e), "Database Name: " + pluginId.toString(), "");
         }
     }
@@ -87,7 +85,7 @@ public class CashMoneyWalletDao {
 
     public void createCashMoneyWallet(String walletPublicKey, FiatCurrency fiatCurrency) throws CantCreateCashMoneyWalletException {
 
-        if(walletExists(walletPublicKey))
+        if (walletExists(walletPublicKey))
             throw new CantCreateCashMoneyWalletException(CantCreateCashMoneyWalletException.DEFAULT_MESSAGE, null, "Cant create Cash Money Wallet", "Cash Wallet already exists! publicKey:" + walletPublicKey);
 
         try {
@@ -102,7 +100,7 @@ public class CashMoneyWalletDao {
 
             table.insertRecord(record);
         } catch (CantInsertRecordException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_CSH_WALLET_CASH_MONEY, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantCreateCashMoneyWalletException(CantCreateCashMoneyWalletException.DEFAULT_MESSAGE, e, "Cant create Cash Money Wallet", "Cant insert record into database");
         }
     }
@@ -115,7 +113,7 @@ public class CashMoneyWalletDao {
 
             table.insertRecord(record);
         } catch (CantInsertRecordException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_CSH_WALLET_CASH_MONEY, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantRegisterCashMoneyWalletTransactionException(CantRegisterCashMoneyWalletTransactionException.DEFAULT_MESSAGE, e, "Cant insert transaction record into database", null);
         }
     }
@@ -157,7 +155,7 @@ public class CashMoneyWalletDao {
         } catch (CantLoadTableToMemoryException e) {
             throw new CantRegisterCreditException(e.getMessage(), e, "Credit in Cash wallet", "Cant credit balance. Cant load table to memory");
         } catch (CashMoneyWalletDoesNotExistException e) {
-        throw new CantRegisterCreditException(e.getMessage(), e, "Credit in Cash wallet", "Cant credit balance. Wallet does not exist");
+            throw new CantRegisterCreditException(e.getMessage(), e, "Credit in Cash wallet", "Cant credit balance. Wallet does not exist");
         }
     }
 
@@ -222,7 +220,7 @@ public class CashMoneyWalletDao {
             DatabaseTableRecord record = this.getWalletRecordByPublicKey(walletPublicKey);
             currency = FiatCurrency.getByCode(record.getStringValue(CashMoneyWalletDatabaseConstants.WALLETS_CURRENCY_COLUMN_NAME));
         } catch (Exception e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_CSH_WALLET_CASH_MONEY, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantGetCashMoneyWalletCurrencyException(CantGetCashMoneyWalletCurrencyException.DEFAULT_MESSAGE, e, "Cant get wallet currency", null);
         }
 
@@ -239,7 +237,7 @@ public class CashMoneyWalletDao {
                 balance = new BigDecimal(record.getStringValue(CashMoneyWalletDatabaseConstants.WALLETS_BOOK_BALANCE_COLUMN_NAME));
             else throw new InvalidParameterException();
         } catch (Exception e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_CSH_WALLET_CASH_MONEY, UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
             throw new CantGetCashMoneyWalletBalanceException(CantGetCashMoneyWalletBalanceException.DEFAULT_MESSAGE, e, "Cant get wallet balance", null);
         }
 
@@ -253,7 +251,7 @@ public class CashMoneyWalletDao {
         } catch (CashMoneyWalletDoesNotExistException e) {
             return false;
         } catch (Exception e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_CSH_WALLET_CASH_MONEY, UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
             return false;
         }
 
@@ -272,7 +270,7 @@ public class CashMoneyWalletDao {
         try {
             table.loadToMemory();
         } catch (CantLoadTableToMemoryException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_CSH_WALLET_CASH_MONEY, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantGetCashMoneyWalletTransactionsException(CantGetCashMoneyWalletTransactionsException.DEFAULT_MESSAGE, e, "getTransaction", "Cant load table into memory");
         }
 
@@ -283,9 +281,9 @@ public class CashMoneyWalletDao {
         if (records.size() != 1)
             throw new CantGetCashMoneyWalletTransactionsException("Inconsistent (" + records.size() + ") number of fetched records, should be between 0 and 1.", null, "The id is: " + transactionId, "");
 
-        try{
+        try {
             transaction = constructCashMoneyWalletTransactionFromRecord(records.get(0));
-        }catch(CantCreateCashMoneyWalletTransactionException e){
+        } catch (CantCreateCashMoneyWalletTransactionException e) {
             throw new CantGetCashMoneyWalletTransactionsException(CantCreateCashMoneyWalletTransactionException.DEFAULT_MESSAGE, null, "getTransaction", "Error creating transaction from record");
 
         }
@@ -297,11 +295,11 @@ public class CashMoneyWalletDao {
         List<CashMoneyWalletTransaction> transactions = new ArrayList<>();
 
         List<String> transactionTypesString = new ArrayList<>();
-        for(TransactionType t : transactionTypes)
+        for (TransactionType t : transactionTypes)
             transactionTypesString.add(t.getCode());
 
         List<String> balanceTypesString = new ArrayList<>();
-        for(BalanceType b : balanceTypes)
+        for (BalanceType b : balanceTypes)
             balanceTypesString.add(b.getCode());
 
         String query = "SELECT * FROM " +
@@ -346,41 +344,50 @@ public class CashMoneyWalletDao {
     public BigDecimal getHeldFunds(String walletPublicKey, String actorPublicKey) throws CantGetHeldFundsException {
         List<DatabaseTableRecord> records;
         BigDecimal heldFunds = new BigDecimal(0);
-        BigDecimal unheldFunds = new BigDecimal(0);
+        BigDecimal unHeldFunds = new BigDecimal(0);
 
-        List<DatabaseTableFilter> filtersTable = new ArrayList<>();
-        DatabaseTableFilter walletFilter, actorFilter;
         DatabaseTable table = this.database.getTable(CashMoneyWalletDatabaseConstants.TRANSACTIONS_TABLE_NAME);
 
-        walletFilter = getEmptyTransactionsTableFilter();
-        walletFilter.setColumn(CashMoneyWalletDatabaseConstants.TRANSACTIONS_WALLET_PUBLIC_KEY_COLUMN_NAME);
-        walletFilter.setValue(walletPublicKey);
-        walletFilter.setType(DatabaseFilterType.EQUAL);
-        filtersTable.add(walletFilter);
+        table.addStringFilter(CashMoneyWalletDatabaseConstants.TRANSACTIONS_WALLET_PUBLIC_KEY_COLUMN_NAME,
+                walletPublicKey, DatabaseFilterType.EQUAL);
 
-        actorFilter = getEmptyTransactionsTableFilter();
-        actorFilter.setColumn(CashMoneyWalletDatabaseConstants.TRANSACTIONS_ACTOR_PUBLIC_KEY_COLUMN_NAME);
-        actorFilter.setValue(actorPublicKey);
-        actorFilter.setType(DatabaseFilterType.EQUAL);
-        filtersTable.add(actorFilter);
-
-        table.setFilterGroup(filtersTable, null, DatabaseFilterOperator.AND);
+        String transactionTypeString;
+        TransactionType transactionType;
+        String amountString;
+        BigDecimal recordAmount;
 
         try {
             table.loadToMemory();
             records = table.getRecords();
+
         } catch (CantLoadTableToMemoryException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_CSH_WALLET_CASH_MONEY, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantGetHeldFundsException(CantGetHeldFundsException.DEFAULT_MESSAGE, e, "getHeldFunds", "Cant load table into memory");
         }
 
         for (DatabaseTableRecord record : records) {
-            if (record.getStringValue(CashMoneyWalletDatabaseConstants.TRANSACTIONS_TRANSACTION_TYPE_COLUMN_NAME).equals(TransactionType.HOLD.getCode()))
-                heldFunds.add(new BigDecimal(record.getStringValue(CashMoneyWalletDatabaseConstants.TRANSACTIONS_AMOUNT_COLUMN_NAME)));
-            else if (record.getStringValue(CashMoneyWalletDatabaseConstants.TRANSACTIONS_TRANSACTION_TYPE_COLUMN_NAME).equals(TransactionType.UNHOLD.getCode()))
-                unheldFunds.add(new BigDecimal(record.getStringValue(CashMoneyWalletDatabaseConstants.TRANSACTIONS_AMOUNT_COLUMN_NAME)));
+            transactionTypeString = record.getStringValue(CashMoneyWalletDatabaseConstants.TRANSACTIONS_TRANSACTION_TYPE_COLUMN_NAME);
+
+            try {
+                transactionType = TransactionType.getByCode(transactionTypeString);
+                amountString = record.getStringValue(CashMoneyWalletDatabaseConstants.TRANSACTIONS_AMOUNT_COLUMN_NAME);
+                recordAmount = new BigDecimal(amountString);
+                switch (transactionType) {
+                    case HOLD:
+                        heldFunds = heldFunds.add(recordAmount);
+                        break;
+                    case UNHOLD:
+                        unHeldFunds = unHeldFunds.add(recordAmount);
+                        break;
+                    default:
+                }
+            } catch (InvalidParameterException e) {
+                //Invalid parameter in this record, we'll continue.
+                pluginRoot.reportError(UnexpectedPluginExceptionSeverity.NOT_IMPORTANT, e);
+            }
         }
-        heldFunds = heldFunds.subtract(unheldFunds);
+
+        heldFunds = heldFunds.subtract(unHeldFunds);
 
         if (heldFunds.compareTo(new BigDecimal(0)) < 0)
             throw new CantGetHeldFundsException(CantGetHeldFundsException.DEFAULT_MESSAGE, null, "Held funds calculates to a negative value", "Unheld funds are higher than held funds, invalid table state");
@@ -401,7 +408,7 @@ public class CashMoneyWalletDao {
         try {
             table.loadToMemory();
         } catch (CantLoadTableToMemoryException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BITDUBAI_CSH_WALLET_CASH_MONEY, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantLoadTableToMemoryException(CantLoadTableToMemoryException.DEFAULT_MESSAGE, e, "getWalletRecordByPublicKey", "Cant load table into memory");
         }
 

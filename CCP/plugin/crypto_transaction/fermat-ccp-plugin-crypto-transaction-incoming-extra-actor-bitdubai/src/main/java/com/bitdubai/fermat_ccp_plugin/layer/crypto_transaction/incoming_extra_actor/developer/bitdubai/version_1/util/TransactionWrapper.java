@@ -2,18 +2,20 @@ package com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.incoming_extra_a
 
 import com.bitdubai.fermat_api.layer.all_definition.enums.Actors;
 import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
+import com.bitdubai.fermat_api.layer.all_definition.enums.CryptoCurrency;
 import com.bitdubai.fermat_api.layer.all_definition.money.CryptoAddress;
-import com.bitdubai.fermat_ccp_api.layer.basic_wallet.bitcoin_wallet.interfaces.BitcoinWalletTransactionRecord;
+import com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.FeeOrigin;
+import com.bitdubai.fermat_ccp_api.layer.basic_wallet.crypto_wallet.interfaces.CryptoWalletTransactionRecord;
 
 import java.util.UUID;
 
 /**
  * Created by eze on 2015.06.25..
  */
-public class TransactionWrapper implements BitcoinWalletTransactionRecord {
+public class TransactionWrapper implements CryptoWalletTransactionRecord {
 
     /*
-     * BitcoinWalletTransactionRecord Interface member variables
+     * CryptoWalletTransactionRecord Interface member variables
      */
     private UUID transactionId;
 
@@ -39,7 +41,15 @@ public class TransactionWrapper implements BitcoinWalletTransactionRecord {
 
     private String memo;
 
+    private FeeOrigin feeOrigin;
+
+    private long        fee;
+
     private BlockchainNetworkType blockchainNetworkType;
+
+    private CryptoCurrency cryptoCurrency;
+
+    private  long Total;
 
     @Override
     public CryptoAddress getAddressFrom() {
@@ -83,6 +93,16 @@ public class TransactionWrapper implements BitcoinWalletTransactionRecord {
         return amount;
     }
 
+    @Override
+    public long getTotal() {
+        return this.Total;
+    }
+
+    public void setTotal(long Total) {
+        this.Total = Total;
+    }
+
+
     public void setAmount(long amount) {
         this.amount = amount;
     }
@@ -112,6 +132,33 @@ public class TransactionWrapper implements BitcoinWalletTransactionRecord {
 
     @Override
     public BlockchainNetworkType getBlockchainNetworkType() {return blockchainNetworkType;}
+
+    public void setCryptoCurrency(CryptoCurrency cryptoCurrency) {
+        this.cryptoCurrency = cryptoCurrency;
+    }
+
+    @Override
+    public CryptoCurrency getCryptoCurrency() {
+        return this.cryptoCurrency;
+    }
+
+    @Override
+    public FeeOrigin getFeeOrigin() {
+        return this.feeOrigin;
+    }
+
+    @Override
+    public long getFee() {
+        return this.fee;
+    }
+
+    public void  setFee(long fee) {
+         this.fee = fee;
+    }
+
+    public void  setFeeOrigin(FeeOrigin feeOrigin) {
+        this.feeOrigin = feeOrigin;
+    }
 
     public void setBlockchainNetworkType(BlockchainNetworkType blockchainNetworkType) {
         this.blockchainNetworkType = blockchainNetworkType;

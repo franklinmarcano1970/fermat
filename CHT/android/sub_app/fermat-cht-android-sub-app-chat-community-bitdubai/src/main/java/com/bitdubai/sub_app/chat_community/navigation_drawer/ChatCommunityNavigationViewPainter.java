@@ -7,9 +7,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.bitdubai.fermat_android_api.engine.FermatApplicationCaller;
 import com.bitdubai.fermat_android_api.engine.NavigationViewPainter;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.ui.adapters.FermatAdapter;
-import com.bitdubai.fermat_api.layer.modules.common_classes.ActiveActorIdentityInformation;
+import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.chat_actor_community.interfaces.ChatActorCommunitySubAppModuleManager;
 import com.bitdubai.sub_app.chat_community.adapters.NavigationAdapter;
 import com.bitdubai.sub_app.chat_community.common.utils.FragmentsCommons;
 
@@ -21,32 +23,36 @@ import java.lang.ref.WeakReference;
  * @author Jose Cardozo josejcb (josejcb89@gmail.com) on 13/04/16.
  * @version 1.0
  */
-public class ChatCommunityNavigationViewPainter implements NavigationViewPainter {
+public class ChatCommunityNavigationViewPainter extends NavigationViewPainter {
 
-    private WeakReference<Context> activity;
-    private final ActiveActorIdentityInformation chatUserLoginIdentity;
+    private ReferenceAppFermatSession<ChatActorCommunitySubAppModuleManager> subAppSession;
+    private WeakReference<FermatApplicationCaller> applicationsHelper;
 
     public ChatCommunityNavigationViewPainter(Context activity,
-                                              ActiveActorIdentityInformation chatUserLoginIdentity) {
-        this.activity = new WeakReference(activity);
-        this.chatUserLoginIdentity = chatUserLoginIdentity;
+                                              ReferenceAppFermatSession<ChatActorCommunitySubAppModuleManager> subAppSession,
+                                              FermatApplicationCaller applicationsHelper) {
+        super(activity);
+        this.subAppSession = subAppSession;
+        this.applicationsHelper = new WeakReference<>(applicationsHelper);
     }
 
     @Override
-    public View addNavigationViewHeader(ActiveActorIdentityInformation chatUserLoginIdentity) {
+    public View addNavigationViewHeader() {
+        View headerView = null;
         try {
-            return FragmentsCommons.setUpHeaderScreen((LayoutInflater) activity.get()
-                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE), activity.get(),
-                    chatUserLoginIdentity);
+            headerView = FragmentsCommons.setUpHeaderScreen((LayoutInflater) getContext()
+                            .getSystemService(Context.LAYOUT_INFLATER_SERVICE), getContext(), subAppSession,
+                    applicationsHelper.get());
         } catch (Exception e) {
             e.printStackTrace();
             return null;
         }
+        return headerView;
     }
 
     @Override
     public FermatAdapter addNavigationViewAdapter() {
-        return new NavigationAdapter(activity.get(), null);
+        return new NavigationAdapter(getContext(), null);
     }
 
     @Override
@@ -76,6 +82,6 @@ public class ChatCommunityNavigationViewPainter implements NavigationViewPainter
 
     @Override
     public boolean hasClickListener() {
-        return true;
+        return false;
     }
 }

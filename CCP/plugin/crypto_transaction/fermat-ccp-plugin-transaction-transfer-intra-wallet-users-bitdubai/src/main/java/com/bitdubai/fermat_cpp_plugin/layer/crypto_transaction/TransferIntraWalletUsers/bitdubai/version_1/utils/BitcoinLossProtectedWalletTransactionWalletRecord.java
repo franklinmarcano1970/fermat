@@ -2,13 +2,16 @@ package com.bitdubai.fermat_cpp_plugin.layer.crypto_transaction.TransferIntraWal
 
 import com.bitdubai.fermat_api.layer.all_definition.enums.Actors;
 import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
+import com.bitdubai.fermat_api.layer.all_definition.enums.CryptoCurrency;
 import com.bitdubai.fermat_api.layer.all_definition.money.CryptoAddress;
+import com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.FeeOrigin;
 import com.bitdubai.fermat_ccp_api.layer.basic_wallet.loss_protected_wallet.interfaces.BitcoinLossProtectedWalletTransactionRecord;
 
 import java.util.UUID;
 
 /**
  * Created by Joaquin Carrasquero on 17/03/16.
+ * updated by Andres Abreu aabreu1 2016.08.01..
  */
 public class BitcoinLossProtectedWalletTransactionWalletRecord implements BitcoinLossProtectedWalletTransactionRecord {
 
@@ -42,6 +45,13 @@ public class BitcoinLossProtectedWalletTransactionWalletRecord implements Bitcoi
 
     long exchangeRate;
 
+    CryptoCurrency cryptoCurrency;
+
+    FeeOrigin FeeOrigin;
+
+    long Fee;
+
+    long Total;
 
     public BitcoinLossProtectedWalletTransactionWalletRecord(UUID transactionId,
                                                              CryptoAddress addressFrom,
@@ -56,7 +66,11 @@ public class BitcoinLossProtectedWalletTransactionWalletRecord implements Bitcoi
                                                              Actors actorToType,
                                                              Actors actorFromType,
                                                              com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType blockchainNetworkType,
-                                                             long exchangeRate) {
+                                                             long exchangeRate,
+                                                             FeeOrigin feeOrigin,
+                                                             long fee,
+                                                             long total,
+                                                             CryptoCurrency cryptoCurrency) {
         TransactionId = transactionId;
         AddressFrom = addressFrom;
         RequestId = requestId;
@@ -70,7 +84,11 @@ public class BitcoinLossProtectedWalletTransactionWalletRecord implements Bitcoi
         ActorToType = actorToType;
         ActorFromType = actorFromType;
         BlockchainNetworkType = blockchainNetworkType;
-        exchangeRate = exchangeRate;
+        this.exchangeRate = exchangeRate;
+        Fee = fee;
+        FeeOrigin = feeOrigin;
+        Total = total;
+        this.cryptoCurrency = cryptoCurrency;
     }
 
     @Override
@@ -141,5 +159,28 @@ public class BitcoinLossProtectedWalletTransactionWalletRecord implements Bitcoi
     @Override
     public long getExchangRate() {
         return exchangeRate;
+    }
+
+    @Override
+    public FeeOrigin getFeeOrigin() {
+        if (FeeOrigin == null)
+            return com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT;
+        else
+        return FeeOrigin;
+    }
+
+    @Override
+    public long getFee() {
+        return Fee;
+    }
+
+    @Override
+    public long getTotal() {
+        return Total;
+    }
+
+    @Override
+    public CryptoCurrency getCryptoCurrency() {
+        return this.cryptoCurrency;
     }
 }

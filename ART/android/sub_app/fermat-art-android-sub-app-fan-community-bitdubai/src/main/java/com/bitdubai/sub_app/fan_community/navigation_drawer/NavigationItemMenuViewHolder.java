@@ -15,6 +15,9 @@ public class NavigationItemMenuViewHolder extends FermatViewHolder {
     private TextView label;
     private ImageView icon;
     private LinearLayout rowContainer;
+    private LinearLayout fullRow;
+    private View line;
+
 
 
     public NavigationItemMenuViewHolder(View itemView) {
@@ -23,6 +26,8 @@ public class NavigationItemMenuViewHolder extends FermatViewHolder {
         label = (TextView) itemView.findViewById(R.id.afc_textView_label);
         icon = (ImageView) itemView.findViewById(R.id.afc_imageView_icon);
         rowContainer = (LinearLayout) itemView.findViewById(R.id.afc_row_container);
+        fullRow = (LinearLayout) itemView.findViewById(R.id.arc_full_row);
+        line = (View)itemView.findViewById(R.id.upline);
 
     }
 
@@ -33,6 +38,12 @@ public class NavigationItemMenuViewHolder extends FermatViewHolder {
     public ImageView getIcon() {
         return icon;
     }
+
+    public LinearLayout getFullRow() {
+        return fullRow;
+    }
+
+    public View getLine() {return line;}
 
     public LinearLayout getRowContainer() {
         return rowContainer;

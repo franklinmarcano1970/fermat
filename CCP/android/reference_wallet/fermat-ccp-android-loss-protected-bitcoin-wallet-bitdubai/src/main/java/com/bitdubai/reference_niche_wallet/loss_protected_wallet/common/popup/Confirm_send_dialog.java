@@ -2,31 +2,34 @@ package com.bitdubai.reference_niche_wallet.loss_protected_wallet.common.popup;
 
 import android.app.Activity;
 import android.app.Dialog;
-
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.widget.Button;
-
 import android.widget.Toast;
 
 import com.bitdubai.android_fermat_ccp_loss_protected_wallet_bitcoin.R;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.views.FermatTextView;
 import com.bitdubai.fermat_api.layer.all_definition.enums.Actors;
 import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
+import com.bitdubai.fermat_api.layer.all_definition.enums.CryptoCurrency;
 import com.bitdubai.fermat_api.layer.all_definition.enums.ReferenceWallet;
 import com.bitdubai.fermat_api.layer.all_definition.money.CryptoAddress;
+import com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.FeeOrigin;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exceptions.CantGetLossProtectedBalanceException;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exceptions.CantSendLossProtectedCryptoException;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exceptions.LossProtectedInsufficientFundsException;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.interfaces.LossProtectedWallet;
-import com.bitdubai.reference_niche_wallet.loss_protected_wallet.session.LossProtectedWalletSession;
 
 
 /**
  * Created by Joaquin Carrasuquero on 11/04/16.
  */
-public class Confirm_send_dialog extends Dialog implements
+
+public class
+        Confirm_send_dialog extends Dialog implements
         View.OnClickListener {
 
 
@@ -36,6 +39,8 @@ public class Confirm_send_dialog extends Dialog implements
 
     private BlockchainNetworkType blockchainNetworkType;
     private long cryptoAmount;
+    private long fee;
+    private long total;
     private CryptoAddress destinationAddress;
     private String notes;
     private String walletPublicKey;
@@ -44,6 +49,7 @@ public class Confirm_send_dialog extends Dialog implements
     private String deliveredToActorPublicKey;
     private Actors deliveredToActorType;
     private ReferenceWallet referenceWallet;
+    private FeeOrigin feeOrigin;
 
     /**
      *  Deals with crypto wallet interface
@@ -51,29 +57,29 @@ public class Confirm_send_dialog extends Dialog implements
 
     private LossProtectedWallet lossProtectedWallet;
 
-    private LossProtectedWalletSession appSession;
-
-
+    private ReferenceAppFermatSession<LossProtectedWallet> appSession;
 
     /**
      *  UI components
      */
+
     Button cancel_btn;
     Button accept_btn;
-
+    FermatTextView confirmText;
 
     public Confirm_send_dialog(Activity a,
-                               LossProtectedWallet lossProtectedWallet,
-                               long cryptoAmount,
-                               CryptoAddress destinationAddress,
-                               String notes, String walletPublicKey,
-                               String deliveredByActorPublicKey,
-                               Actors deliveredByActorType,
+                               LossProtectedWallet lossProtectedWallet,//
+                               long cryptoAmount,//
+                               CryptoAddress destinationAddress,//
+                               String notes,
+                               String walletPublicKey,
+                               String deliveredByActorPublicKey,//
+                               Actors deliveredByActorType,//
                                String deliveredToActorPublicKey,
                                Actors deliveredToActorType,
                                ReferenceWallet referenceWallet,
                                BlockchainNetworkType blockchainNetworkType,
-                               LossProtectedWalletSession appSession) {
+                               ReferenceAppFermatSession<LossProtectedWallet> appSession) {
         super(a);
         this.activity = a;
         this.lossProtectedWallet=lossProtectedWallet;
@@ -91,6 +97,33 @@ public class Confirm_send_dialog extends Dialog implements
 
     }
 
+    public Confirm_send_dialog(Activity a,
+                             LossProtectedWallet lossProtectedWallet,
+                             long cryptoAmount,
+                             long fee,
+                             long total,
+                             FeeOrigin feeOrigin,
+                             CryptoAddress destinationAddress,
+                             String notes,
+                             String deliveredByActorPublicKey,
+                             Actors deliveredByActorType,
+                             BlockchainNetworkType blockchainNetworkType,
+                             ReferenceAppFermatSession<LossProtectedWallet> appSession) {
+        super(a);
+        this.activity = a;
+        this.lossProtectedWallet=lossProtectedWallet;
+        this.cryptoAmount = cryptoAmount;
+        this.destinationAddress = destinationAddress;
+        this.notes = notes;
+        this.deliveredByActorPublicKey = deliveredByActorPublicKey;
+        this.deliveredByActorType = deliveredByActorType;
+        this.fee = fee;
+        this.total = total;
+        this.feeOrigin = feeOrigin;
+        this.blockchainNetworkType = blockchainNetworkType;
+        this.appSession = appSession;
+
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -138,7 +171,10 @@ public class Confirm_send_dialog extends Dialog implements
                             this.deliveredToActorPublicKey,
                             this.deliveredToActorType,
                             this.referenceWallet,
-                            blockchainNetworkType
+                            blockchainNetworkType,
+                            CryptoCurrency.BITCOIN,
+                            0,
+                            FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT
 
                     );
                 }

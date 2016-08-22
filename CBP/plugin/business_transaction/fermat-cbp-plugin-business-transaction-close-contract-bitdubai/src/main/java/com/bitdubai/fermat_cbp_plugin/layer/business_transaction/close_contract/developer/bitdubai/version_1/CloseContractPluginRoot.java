@@ -2,11 +2,14 @@ package com.bitdubai.fermat_cbp_plugin.layer.business_transaction.close_contract
 
 import com.bitdubai.fermat_api.CantStartAgentException;
 import com.bitdubai.fermat_api.CantStartPluginException;
+import com.bitdubai.fermat_api.CantStopAgentException;
 import com.bitdubai.fermat_api.FermatException;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.abstract_classes.AbstractPlugin;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.annotations.NeededAddonReference;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.annotations.NeededPluginReference;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.EventManager;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.FermatManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.utils.PluginVersionReference;
 import com.bitdubai.fermat_api.layer.all_definition.developer.DatabaseManagerForDevelopers;
 import com.bitdubai.fermat_api.layer.all_definition.developer.DeveloperDatabase;
@@ -32,7 +35,6 @@ import com.bitdubai.fermat_api.layer.osa_android.logger_system.LogLevel;
 import com.bitdubai.fermat_api.layer.osa_android.logger_system.LogManager;
 import com.bitdubai.fermat_cbp_api.all_definition.events.enums.EventType;
 import com.bitdubai.fermat_cbp_api.all_definition.exceptions.CantInitializeDatabaseException;
-import com.bitdubai.fermat_cbp_api.all_definition.exceptions.CantSetObjectException;
 import com.bitdubai.fermat_cbp_api.all_definition.exceptions.CantStartServiceException;
 import com.bitdubai.fermat_cbp_api.layer.business_transaction.close_contract.events.NewContractClosed;
 import com.bitdubai.fermat_cbp_api.layer.contract.customer_broker_purchase.interfaces.CustomerBrokerContractPurchaseManager;
@@ -44,16 +46,14 @@ import com.bitdubai.fermat_cbp_plugin.layer.business_transaction.close_contract.
 import com.bitdubai.fermat_cbp_plugin.layer.business_transaction.close_contract.developer.bitdubai.version_1.database.CloseContractBusinessTransactionDeveloperDatabaseFactory;
 import com.bitdubai.fermat_cbp_plugin.layer.business_transaction.close_contract.developer.bitdubai.version_1.event_handler.CloseContractRecorderService;
 import com.bitdubai.fermat_cbp_plugin.layer.business_transaction.close_contract.developer.bitdubai.version_1.exceptions.CantInitializeCloseContractBusinessTransactionDatabaseException;
-import com.bitdubai.fermat_cbp_plugin.layer.business_transaction.close_contract.developer.bitdubai.version_1.structure.CloseContractMonitorAgent;
+import com.bitdubai.fermat_cbp_plugin.layer.business_transaction.close_contract.developer.bitdubai.version_1.structure.CloseContractMonitorAgent2;
 import com.bitdubai.fermat_cbp_plugin.layer.business_transaction.close_contract.developer.bitdubai.version_1.structure.CloseContractTransactionManager;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
-import com.bitdubai.fermat_pip_api.layer.platform_service.event_manager.interfaces.EventManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -63,9 +63,6 @@ import java.util.regex.Pattern;
 public class CloseContractPluginRoot extends AbstractPlugin implements
         DatabaseManagerForDevelopers,
         LogManagerForDevelopers {
-
-    @NeededAddonReference(platform = Platforms.PLUG_INS_PLATFORM, layer = Layers.PLATFORM_SERVICE, addon = Addons.ERROR_MANAGER)
-    ErrorManager errorManager;
 
     @NeededAddonReference(platform = Platforms.PLUG_INS_PLATFORM, layer = Layers.PLATFORM_SERVICE, addon = Addons.EVENT_MANAGER)
     private EventManager eventManager;
@@ -100,6 +97,16 @@ public class CloseContractPluginRoot extends AbstractPlugin implements
      */
     CloseContractBusinessTransactionDeveloperDatabaseFactory closeContractBusinessTransactionDeveloperDatabaseFactory;
 
+    /**
+     * Represents the plugin processor agent
+     */
+    CloseContractMonitorAgent2 processorAgent;
+
+    //Agent configuration
+    private final long SLEEP_TIME = 10000;
+    private final long DELAY_TIME = 1000;
+    private final TimeUnit TIME_UNIT = TimeUnit.MILLISECONDS;
+
     static Map<String, LogLevel> newLoggingLevel = new HashMap<String, LogLevel>();
 
     ServiceStatus serviceStatus = ServiceStatus.CREATED;
@@ -132,9 +139,11 @@ public class CloseContractPluginRoot extends AbstractPlugin implements
              * Initialize Dao
              */
             CloseContractBusinessTransactionDao closeContractBusinessTransactionDao =
-                    new CloseContractBusinessTransactionDao(pluginDatabaseSystem,
+                    new CloseContractBusinessTransactionDao(
+                            pluginDatabaseSystem,
                             pluginId,
-                            database,errorManager);
+                            database,
+                            this);
 
             /**
              * Init event recorder service.
@@ -147,16 +156,31 @@ public class CloseContractPluginRoot extends AbstractPlugin implements
             /**
              * Init monitor Agent
              */
-            CloseContractMonitorAgent openContractMonitorAgent = new CloseContractMonitorAgent(
+            /*CloseContractMonitorAgent openContractMonitorAgent = new CloseContractMonitorAgent(
                     pluginDatabaseSystem,
                     logManager,
-                    errorManager,
+                    this,
                     eventManager,
                     pluginId,
                     transactionTransmissionManager,
                     customerBrokerContractPurchaseManager,
                     customerBrokerContractSaleManager);
-            openContractMonitorAgent.start();
+            openContractMonitorAgent.start();*/
+
+            //New Agent starting
+            processorAgent = new CloseContractMonitorAgent2(
+                    SLEEP_TIME,
+                    TIME_UNIT,
+                    DELAY_TIME,
+                    this,
+                    eventManager,
+                    transactionTransmissionManager,
+                    customerBrokerContractPurchaseManager,
+                    customerBrokerContractSaleManager,
+                    closeContractBusinessTransactionDao
+            );
+            processorAgent.start();
+
             /**
              * Init plugin Manager
              */
@@ -172,14 +196,12 @@ public class CloseContractPluginRoot extends AbstractPlugin implements
             this.serviceStatus = ServiceStatus.STARTED;
         } catch (CantInitializeDatabaseException exception) {
 
-            errorManager.reportUnexpectedPluginException(
-                    Plugins.CLOSE_CONTRACT,
+            reportError(
                     UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN,
                     exception);
 
 
             throw new CantStartPluginException(
-
                     CantStartPluginException.DEFAULT_MESSAGE,
                     FermatException.wrapException(exception),
                     "Starting close contract plugin",
@@ -188,10 +210,7 @@ public class CloseContractPluginRoot extends AbstractPlugin implements
 
         } catch (CantInitializeCloseContractBusinessTransactionDatabaseException exception) {
 
-            errorManager.reportUnexpectedPluginException(
-                    Plugins.CLOSE_CONTRACT,
-                    UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN,
-                    exception);
+            reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, exception);
 
             throw new CantStartPluginException(
                     CantStartPluginException.DEFAULT_MESSAGE,
@@ -200,37 +219,27 @@ public class CloseContractPluginRoot extends AbstractPlugin implements
                     "Unexpected Exception");
         } catch (CantStartServiceException exception) {
 
-            errorManager.reportUnexpectedPluginException(
-                    Plugins.CLOSE_CONTRACT,
-                    UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN,
-                    exception);
+            reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, exception);
 
             throw new CantStartPluginException(
-
-
                     CantStartPluginException.DEFAULT_MESSAGE,
                     exception,
                     "Starting close contract plugin",
                     "Cannot start recorder service");
-        } catch (CantSetObjectException exception) {
 
-            errorManager.reportUnexpectedPluginException(
+        } /*catch (CantSetObjectException exception) {
 
-                    Plugins.CLOSE_CONTRACT,
-                    UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN,
-                    exception);
+            reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, exception);
 
             throw new CantStartPluginException(
                     CantStartPluginException.DEFAULT_MESSAGE,
                     exception,
                     "Starting close contract plugin",
                     "Cannot set an object");
-        } catch (CantStartAgentException exception) {
 
-            errorManager.reportUnexpectedPluginException(
-                    Plugins.CLOSE_CONTRACT,
-                    UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN,
-                    exception);
+        }*/ catch (CantStartAgentException exception) {
+
+            reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, exception);
 
 
             throw new CantStartPluginException(
@@ -240,10 +249,7 @@ public class CloseContractPluginRoot extends AbstractPlugin implements
                     "Cannot start the monitor agent");
         } catch (Exception exception) {
 
-            errorManager.reportUnexpectedPluginException(
-                    Plugins.CLOSE_CONTRACT,
-                    UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN,
-                    exception);
+            reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, exception);
 
 
             throw new CantStartPluginException(
@@ -289,8 +295,8 @@ public class CloseContractPluginRoot extends AbstractPlugin implements
              * The database exists but cannot be open. I can not handle this situation.
              */
 
-            errorManager.reportUnexpectedPluginException(
-                    Plugins.CLOSE_CONTRACT,
+            reportError(
+
                     UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN,
                     cantOpenDatabaseException);
             throw new CantInitializeDatabaseException(cantOpenDatabaseException.getLocalizedMessage());
@@ -319,10 +325,7 @@ public class CloseContractPluginRoot extends AbstractPlugin implements
                 /*
                  * The database cannot be created. I can not handle this situation.
                  */
-                errorManager.reportUnexpectedPluginException(
-                        Plugins.OPEN_CONTRACT,
-                        UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN,
-                        cantOpenDatabaseException);
+                reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cantOpenDatabaseException);
                 throw new CantInitializeDatabaseException(cantOpenDatabaseException.getLocalizedMessage());
 
             }
@@ -333,7 +336,8 @@ public class CloseContractPluginRoot extends AbstractPlugin implements
     @Override
     public List<String> getClassesFullPath() {
         List<String> returnedClasses = new ArrayList<String>();
-        returnedClasses.add("com.bitdubai.fermat_cbp_plugin.layer.business_transaction.close_contract.developer.bitdubai.version_1.CloseContractPluginRoot");
+        returnedClasses.add("CloseContractPluginRoot");
+
         return returnedClasses;
     }
 
@@ -349,6 +353,13 @@ public class CloseContractPluginRoot extends AbstractPlugin implements
 
     @Override
     public void stop() {
+        try {
+            processorAgent.stop();
+        } catch (CantStopAgentException e) {
+            reportError(
+                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN,
+                    e);
+        }
         this.serviceStatus = ServiceStatus.STOPPED;
     }
 
@@ -392,14 +403,8 @@ public class CloseContractPluginRoot extends AbstractPlugin implements
                     CloseContractPluginRoot.newLoggingLevel.put(pluginPair.getKey(), pluginPair.getValue());
                 }
             }
-        }catch (Exception exception){
-
-            errorManager.reportUnexpectedPluginException(
-                    Plugins.CLOSE_CONTRACT,
-                    UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN,
-                    exception);
-
-
+        } catch (Exception exception) {
+            reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, exception);
         }
     }
 

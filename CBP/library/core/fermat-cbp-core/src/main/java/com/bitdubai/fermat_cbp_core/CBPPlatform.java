@@ -23,7 +23,7 @@ import com.bitdubai.fermat_core_api.layer.all_definition.system.exceptions.CantS
 
 /**
  * The class <code>com.bitdubai.fermat_cbp_core.CBPPlatform</code>
- * haves all the necessary business logic to start the CBP platform.
+ * contains all the necessary business logic to start the CBP platform.
  * <p/>
  * Created by Leon Acosta - (laion.cj91@gmail.com) on 08/11/2015.
  *
@@ -42,21 +42,21 @@ public class CBPPlatform extends AbstractPlatform {
 
         try {
 
-            registerLayer(new ActorLayer()                       );
-            registerLayer(new ActorConnectionLayer()             );
-            registerLayer(new ActorNetworkServiceLayer()         );
-            registerLayer(new BusinessTransactionLayer()         );
-            registerLayer(new ContractLayer()                    );
-            registerLayer(new IdentityLayer()                    );
-            registerLayer(new MiddlewareLayer()                  );
-            registerLayer(new NegotiationLayer()                 );
-            registerLayer(new NegotiationTransactionLayer()      );
-            registerLayer(new NetworkServiceLayer()              );
-            registerLayer(new StockTransactionsLayer()           );
-            registerLayer(new SubAppModuleLayer()                );
+            registerLayer(new ActorLayer());
+            registerLayer(new ActorConnectionLayer());
+            registerLayer(new ActorNetworkServiceLayer());
+            registerLayer(new BusinessTransactionLayer());
+            registerLayer(new ContractLayer());
+            registerLayer(new IdentityLayer());
+            registerLayer(new MiddlewareLayer());
+            registerLayer(new NegotiationLayer());
+            registerLayer(new NegotiationTransactionLayer());
+            registerLayer(new NetworkServiceLayer());
+            registerLayer(new StockTransactionsLayer());
+            registerLayer(new SubAppModuleLayer());
             registerLayer(new UserLevelBusinessTransactionLayer());
-            registerLayer(new WalletLayer()                      );
-            registerLayer(new WalletModuleLayer()                );
+            registerLayer(new WalletLayer());
+            registerLayer(new WalletModuleLayer());
 
         } catch (CantRegisterLayerException e) {
 

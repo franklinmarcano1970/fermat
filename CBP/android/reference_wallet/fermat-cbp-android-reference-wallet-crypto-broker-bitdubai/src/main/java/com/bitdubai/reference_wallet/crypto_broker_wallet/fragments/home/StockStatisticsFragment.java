@@ -10,6 +10,9 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.bitdubai.fermat_android_api.layer.definition.wallet.AbstractFermatFragment;
+import com.bitdubai.fermat_api.layer.all_definition.enums.CryptoCurrency;
+import com.bitdubai.fermat_api.layer.all_definition.enums.CurrencyTypes;
+import com.bitdubai.fermat_api.layer.all_definition.util.BitcoinConverter;
 import com.bitdubai.fermat_api.layer.world.interfaces.Currency;
 import com.bitdubai.fermat_cbp_api.all_definition.constants.CBPBroadcasterConstants;
 import com.bitdubai.fermat_cbp_api.layer.wallet.crypto_broker.interfaces.CryptoBrokerStockTransaction;
@@ -73,7 +76,7 @@ public class StockStatisticsFragment extends AbstractFermatFragment implements C
 
         BarData BD = getChartData();
 
-        if( BD != null){
+        if (BD != null) {
             barChart.setData(BD);
         }
 
@@ -94,7 +97,7 @@ public class StockStatisticsFragment extends AbstractFermatFragment implements C
 
         Calendar calendar = Calendar.getInstance();
 
-        if(lastItemPosition > 3) {
+        if (lastItemPosition > 3) {
             barChart.moveViewToX(lastItemPosition - 3);
             barChart.highlightValue(lastItemPosition, 0);
         }
@@ -113,17 +116,23 @@ public class StockStatisticsFragment extends AbstractFermatFragment implements C
             }
         });
 
-        String[] meses = {"JAN", "FEB", "MAR", "MAY", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"};
+        String[] meses = {str(R.string.jan), str(R.string.feb), str(R.string.mar), str(R.string.apr),
+                str(R.string.may), str(R.string.jun), str(R.string.jul), str(R.string.aug), str(R.string.sep),
+                str(R.string.oct), str(R.string.nov), str(R.string.dec)};
 
         TextView month = (TextView) layout.findViewById(R.id.month);
         TextView year = (TextView) layout.findViewById(R.id.year);
 
-        String idyear = ""+calendar.get(Calendar.YEAR);
+        String idyear = String.valueOf(calendar.get(Calendar.YEAR));
 
         month.setText(meses[calendar.get(Calendar.MONTH)]);
         year.setText(idyear);
 
         return layout;
+    }
+
+    private String str(int id) {
+        return getResources().getString(id);
     }
 
     public void bind(StockStatisticsData data) {
@@ -136,7 +145,7 @@ public class StockStatisticsFragment extends AbstractFermatFragment implements C
 
         if (stockTransactions != null) {
 
-            if ( !stockTransactions.isEmpty() ) {
+            if (!stockTransactions.isEmpty()) {
 
                 List<BarEntry> entries = new ArrayList<>();
                 List<String> xVals = new ArrayList<>();
@@ -175,6 +184,9 @@ public class StockStatisticsFragment extends AbstractFermatFragment implements C
                     int index = lastItemPosition;
 
                     float runningAvailableBalance = transaction.getRunningAvailableBalance().floatValue();
+
+                    if (currency.getType() == CurrencyTypes.CRYPTO && CryptoCurrency.BITCOIN.getCode().equals(currency.getCode()))
+                        runningAvailableBalance = (float) BitcoinConverter.convert(runningAvailableBalance, BitcoinConverter.Currency.SATOSHI, BitcoinConverter.Currency.BITCOIN);
 
                     entries.get(index).setVal(runningAvailableBalance);
 
@@ -219,7 +231,7 @@ public class StockStatisticsFragment extends AbstractFermatFragment implements C
 
     private void putDataInIndicators(int xIndex) {
 
-        if( !map.isEmpty()) {
+        if (!map.isEmpty()) {
             CryptoBrokerStockTransaction transaction = map.get(xIndex);
 
             if (transaction != null) {
@@ -241,7 +253,7 @@ public class StockStatisticsFragment extends AbstractFermatFragment implements C
             } else {
                 startIndicator.setText(numberFormat.format(""));
             }
-        }else{
+        } else {
             startIndicator.setText(numberFormat.format(""));
             endIndicator.setText(numberFormat.format(""));
 

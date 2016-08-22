@@ -1,33 +1,31 @@
 package com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.fragments;
 
-
 import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.sessions.ChatSession;
 import com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.settings.ChatSettings;
 import com.bitdubai.fermat_android_api.layer.definition.wallet.AbstractFermatFragment;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.ui.interfaces.FermatWorkerCallBack;
 import com.bitdubai.fermat_android_api.ui.util.FermatWorker;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedSubAppExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.navigation_structure.enums.Activities;
 import com.bitdubai.fermat_api.layer.all_definition.settings.structure.SettingsManager;
 import com.bitdubai.fermat_api.layer.dmp_engine.sub_app_runtime.enums.SubApps;
 import com.bitdubai.fermat_cht_android_sub_app_chat_bitdubai.R;
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.ChatManager;
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.ChatPreferenceSettings;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedSubAppExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
+import com.bitdubai.fermat_pip_api.layer.network_service.subapp_resources.SubAppResourcesProviderManager;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -40,7 +38,8 @@ import java.io.InputStreamReader;
  * @version 1.0
  */
 
-public class ChatErrorReportFragment extends AbstractFermatFragment {
+public class ChatErrorReportFragment
+        extends AbstractFermatFragment<ReferenceAppFermatSession<ChatManager>, SubAppResourcesProviderManager> {
 
     // Fermat Managers
     private ChatManager chatManager;
@@ -48,7 +47,7 @@ public class ChatErrorReportFragment extends AbstractFermatFragment {
     private ErrorManager errorManager;
     private SettingsManager<ChatSettings> settingsManager;
     private ChatPreferenceSettings chatSettings;
-    private ChatSession chatSession;
+    private ReferenceAppFermatSession<ChatManager> chatSession;
 
     private Button okBtn;
     private EditText messageEdit;
@@ -57,14 +56,16 @@ public class ChatErrorReportFragment extends AbstractFermatFragment {
     private Toolbar toolbar;
     private String textToCopy;
 
-    public static ChatErrorReportFragment newInstance() { return new ChatErrorReportFragment(); }
+    public static ChatErrorReportFragment newInstance() {
+        return new ChatErrorReportFragment();
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         try {
-            chatSession = ((ChatSession) appSession);
-            chatManager = chatSession.getModuleManager();
+            //chatSession = ((ChatSessionReferenceApp) appSession);
+            chatManager = appSession.getModuleManager();
             //chatManager = moduleManager.getChatManager();
             errorManager = appSession.getErrorManager();
             toolbar = getToolbar();
@@ -78,6 +79,7 @@ public class ChatErrorReportFragment extends AbstractFermatFragment {
     private static final String TAG = "CHT log";
     private static final String processId = Integer.toString(android.os.Process
             .myPid());
+
     public static StringBuilder getLog() {
 
         int lineNumber = 0;
@@ -85,7 +87,7 @@ public class ChatErrorReportFragment extends AbstractFermatFragment {
         StringBuilder builder = new StringBuilder();
 
         try {
-            String[] command = new String[] { "logcat", "-v", "threadtime" };
+            String[] command = new String[]{"logcat", "-v", "threadtime"};
 
             Process process = Runtime.getRuntime().exec(command);
 
@@ -102,7 +104,7 @@ public class ChatErrorReportFragment extends AbstractFermatFragment {
                     builder.append(line);
                     lineNumber++;
                 }
-                if(lineNumber==1000){
+                if (lineNumber == 1000) {
                     break;
                 }
             }
@@ -133,7 +135,7 @@ public class ChatErrorReportFragment extends AbstractFermatFragment {
         copyEdit.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-                if(copyEdit.getText().length() == 0) {
+                if (copyEdit.getText().length() == 0) {
                     try {
                         final ProgressDialog progressDialog = new ProgressDialog(getActivity());
                         progressDialog.setMessage("Please wait");
@@ -184,7 +186,7 @@ public class ChatErrorReportFragment extends AbstractFermatFragment {
                 final String messageText = messageEdit.getText().toString();
                 if (TextUtils.isEmpty(messageText)) {
                     return;
-                }else {
+                } else {
                     try {
                         //TODO: esto no se hace así pero bueno, me hacen arreglarlo y es tarde...
                         //TODO: y otra cosa, el mail que tiene que ingresar es a donde lo quiere mandar.
@@ -223,17 +225,11 @@ public class ChatErrorReportFragment extends AbstractFermatFragment {
         return layout;
     }
 
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        menu.clear();
-        // Inflate the menu items
-        //inflater.inflate(R.menu.chat_menu, menu);
-    }
-
     private synchronized String getMoreData() {
         String dataSet = "";
         try {
-            dataSet= getLog().toString();
-        }catch (Exception e) {
+            dataSet = getLog().toString();
+        } catch (Exception e) {
             errorManager.reportUnexpectedSubAppException(SubApps.CHT_CHAT, UnexpectedSubAppExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
         }
         return dataSet;

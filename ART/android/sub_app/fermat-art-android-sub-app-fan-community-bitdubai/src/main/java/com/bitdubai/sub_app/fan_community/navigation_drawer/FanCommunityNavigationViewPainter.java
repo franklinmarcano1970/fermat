@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
 import com.bitdubai.fermat_android_api.engine.NavigationViewPainter;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.ui.adapters.FermatAdapter;
 import com.bitdubai.fermat_api.layer.modules.common_classes.ActiveActorIdentityInformation;
 import com.bitdubai.fermat_art_api.all_definition.exceptions.CantGetActiveLoginIdentityException;
@@ -17,37 +18,51 @@ import com.bitdubai.fermat_art_api.layer.sub_app_module.community.fan.interfaces
 import com.bitdubai.sub_app.fan_community.R;
 import com.bitdubai.sub_app.fan_community.commons.popups.ListIdentitiesDialog;
 import com.bitdubai.sub_app.fan_community.commons.utils.FragmentsCommons;
-import com.bitdubai.sub_app.fan_community.sessions.FanCommunitySubAppSession;
+import com.bitdubai.sub_app.fan_community.sessions.FanCommunitySubAppSessionReferenceApp;
 
 import java.lang.ref.WeakReference;
 
 /**
  * Created by Manuel Perez (darkpriestrelative@gmail.com) on 05/04/16.
  */
-public class FanCommunityNavigationViewPainter implements NavigationViewPainter {
+public class FanCommunityNavigationViewPainter extends NavigationViewPainter {
 
     private WeakReference<Context> activity;
     private ActiveActorIdentityInformation actorIdentity;
-    private FanCommunitySubAppSession subAppSession;
+    private ReferenceAppFermatSession subAppSession;
     private FanCommunityModuleManager moduleManager;
 
 
     public FanCommunityNavigationViewPainter(
             Context activity,
             ActiveActorIdentityInformation actorIdentity,
-            FanCommunitySubAppSession subAppSession) {
+            ReferenceAppFermatSession subAppSession) {
         this.activity = new WeakReference<Context>(activity);
         this.actorIdentity = actorIdentity;
         this.subAppSession = subAppSession;
-        this.moduleManager = subAppSession.getModuleManager();
+        this.moduleManager = (FanCommunityModuleManager) subAppSession.getModuleManager();
     }
 
     @Override
-    public View addNavigationViewHeader(ActiveActorIdentityInformation actorIdentityInformation) {
-        View headerView = null;
+    public View addNavigationViewHeader() {
+        View headerView=null;
+        //TODO: el actorIdentityInformation lo podes obtener del module en un hilo en background y hacer un lindo loader mientras tanto
         try {
+            //If the actor is not set yet, I'll try to find it.
+            if(actorIdentity==null&&moduleManager!=null){
+                try{
+                    //I'll set the app public cas just in case.
+                    String subAppPublicKey = subAppSession.getAppPublicKey();
+                    if(subAppPublicKey!=null&&!subAppPublicKey.isEmpty()){
+                        moduleManager.setAppPublicKey(subAppPublicKey);
+                    }
+                    actorIdentity = moduleManager.getSelectedActorIdentity();
+                } catch (Exception e) {
+                    //Cannot find the selected identity in any form... I'll let the identity in null
+                }
+            }
             headerView = FragmentsCommons.setUpHeaderScreen((LayoutInflater) activity.get()
-                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE), activity.get(), actorIdentityInformation);
+                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE), activity.get(), actorIdentity);
             headerView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {

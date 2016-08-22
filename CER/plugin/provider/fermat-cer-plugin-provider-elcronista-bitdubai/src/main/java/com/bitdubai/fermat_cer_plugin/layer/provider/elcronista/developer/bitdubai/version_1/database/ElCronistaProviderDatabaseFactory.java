@@ -1,4 +1,4 @@
-package   com.bitdubai.fermat_cer_plugin.layer.provider.elcronista.developer.bitdubai.version_1.database;
+package com.bitdubai.fermat_cer_plugin.layer.provider.elcronista.developer.bitdubai.version_1.database;
 
 import com.bitdubai.fermat_api.layer.osa_android.database_system.Database;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.DatabaseDataType;
@@ -13,10 +13,10 @@ import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.Inva
 import java.util.UUID;
 
 /**
- *  The Class  <code>com.bitdubai.fermat_cer_plugin.layer.provider.elcronista.developer.bitdubai.version_1.database.ElCronistaProviderDatabaseFactory</code>
+ * The Class  <code>com.bitdubai.fermat_cer_plugin.layer.provider.elcronista.developer.bitdubai.version_1.database.ElCronistaProviderDatabaseFactory</code>
  * is responsible for creating the tables in the database where it is to keep the information.
  * <p/>
- *
+ * <p/>
  * Created by Alejandro Bicelis - (abicelis@gmail.com) on 08/12/15.
  *
  * @version 1.0
@@ -74,8 +74,8 @@ public class ElCronistaProviderDatabaseFactory implements DealsWithPluginDatabas
              */
             table = databaseFactory.newTableFactory(ownerId, ElCronistaProviderDatabaseConstants.PROVIDER_INFO_TABLE_NAME);
 
-            table.addColumn(ElCronistaProviderDatabaseConstants.PROVIDER_INFO_ID_COLUMN_NAME, DatabaseDataType.STRING, 100, Boolean.TRUE);
-            table.addColumn(ElCronistaProviderDatabaseConstants.PROVIDER_INFO_NAME_COLUMN_NAME, DatabaseDataType.STRING, 100, Boolean.FALSE);
+            table.addColumn(ElCronistaProviderDatabaseConstants.PROVIDER_INFO_ID_COLUMN_NAME, DatabaseDataType.TEXT, 100, Boolean.TRUE);
+            table.addColumn(ElCronistaProviderDatabaseConstants.PROVIDER_INFO_NAME_COLUMN_NAME, DatabaseDataType.TEXT, 100, Boolean.FALSE);
 
             table.addIndex(ElCronistaProviderDatabaseConstants.PROVIDER_INFO_FIRST_KEY_COLUMN);
 
@@ -89,12 +89,12 @@ public class ElCronistaProviderDatabaseFactory implements DealsWithPluginDatabas
              */
             table = databaseFactory.newTableFactory(ownerId, ElCronistaProviderDatabaseConstants.QUERY_HISTORY_TABLE_NAME);
 
-            table.addColumn(ElCronistaProviderDatabaseConstants.QUERY_HISTORY_ID_COLUMN_NAME, DatabaseDataType.STRING, 100, Boolean.TRUE);
-            table.addColumn(ElCronistaProviderDatabaseConstants.QUERY_HISTORY_FROM_CURRENCY_COLUMN_NAME, DatabaseDataType.STRING, 100, Boolean.FALSE);
-            table.addColumn(ElCronistaProviderDatabaseConstants.QUERY_HISTORY_TO_CURRENCY_COLUMN_NAME, DatabaseDataType.STRING, 100, Boolean.FALSE);
-            table.addColumn(ElCronistaProviderDatabaseConstants.QUERY_HISTORY_SALE_PRICE_COLUMN_NAME, DatabaseDataType.MONEY, 100, Boolean.FALSE);
-            table.addColumn(ElCronistaProviderDatabaseConstants.QUERY_HISTORY_PURCHASE_PRICE_COLUMN_NAME, DatabaseDataType.MONEY, 100, Boolean.FALSE);
-            table.addColumn(ElCronistaProviderDatabaseConstants.QUERY_HISTORY_TIMESTAMP_COLUMN_NAME, DatabaseDataType.LONG_INTEGER, 100, Boolean.FALSE);
+            table.addColumn(ElCronistaProviderDatabaseConstants.QUERY_HISTORY_ID_COLUMN_NAME, DatabaseDataType.TEXT, 100, Boolean.TRUE);
+            table.addColumn(ElCronistaProviderDatabaseConstants.QUERY_HISTORY_FROM_CURRENCY_COLUMN_NAME, DatabaseDataType.TEXT, 100, Boolean.FALSE);
+            table.addColumn(ElCronistaProviderDatabaseConstants.QUERY_HISTORY_TO_CURRENCY_COLUMN_NAME, DatabaseDataType.TEXT, 100, Boolean.FALSE);
+            table.addColumn(ElCronistaProviderDatabaseConstants.QUERY_HISTORY_SALE_PRICE_COLUMN_NAME, DatabaseDataType.REAL, 100, Boolean.FALSE);
+            table.addColumn(ElCronistaProviderDatabaseConstants.QUERY_HISTORY_PURCHASE_PRICE_COLUMN_NAME, DatabaseDataType.REAL, 100, Boolean.FALSE);
+            table.addColumn(ElCronistaProviderDatabaseConstants.QUERY_HISTORY_TIMESTAMP_COLUMN_NAME, DatabaseDataType.INTEGER, 100, Boolean.FALSE);
 
             table.addIndex(ElCronistaProviderDatabaseConstants.QUERY_HISTORY_FIRST_KEY_COLUMN);
 

@@ -19,19 +19,19 @@ import android.widget.Spinner;
 import android.widget.Toast;
 
 import com.bitdubai.fermat_android_api.layer.definition.wallet.AbstractFermatFragment;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.ui.Views.PresentationDialog;
 import com.bitdubai.fermat_api.FermatException;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedUIExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
 import com.bitdubai.fermat_api.layer.all_definition.enums.UISource;
 import com.bitdubai.fermat_api.layer.all_definition.settings.exceptions.CantPersistSettingsException;
-import com.bitdubai.fermat_api.layer.all_definition.settings.structure.SettingsManager;
+import com.bitdubai.fermat_api.layer.pip_engine.interfaces.ResourceProviderManager;
 import com.bitdubai.fermat_dap_android_sub_app_asset_factory_bitdubai.R;
-import org.fermat.fermat_dap_android_sub_app_asset_factory.sessions.AssetFactorySession;
-import org.fermat.fermat_dap_android_sub_app_asset_factory.sessions.SessionConstantsAssetFactory;
+
 import org.fermat.fermat_dap_api.layer.dap_module.asset_factory.AssetFactorySettings;
 import org.fermat.fermat_dap_api.layer.dap_module.asset_factory.interfaces.AssetFactoryModuleManager;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedUIExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -41,17 +41,16 @@ import static android.widget.Toast.makeText;
 /**
  * Created by Nerio on 01/02/16.
  */
-public class SettingsFactoryNetworkFragment extends AbstractFermatFragment implements AdapterView.OnItemSelectedListener {
+public class SettingsFactoryNetworkFragment extends AbstractFermatFragment<ReferenceAppFermatSession<AssetFactoryModuleManager>, ResourceProviderManager> implements AdapterView.OnItemSelectedListener {
 
     private View rootView;
     private Spinner spinner;
     List<BlockchainNetworkType> listElementSpinner;
-
     // Fermat Managers
-    private AssetFactoryModuleManager manager;
+    private AssetFactoryModuleManager moduleManager;
     private ErrorManager errorManager;
-    SettingsManager<AssetFactorySettings> settingsManager;
     AssetFactorySettings settings = null;
+
     public static SettingsFactoryNetworkFragment newInstance() {
         return new SettingsFactoryNetworkFragment();
     }
@@ -61,10 +60,9 @@ public class SettingsFactoryNetworkFragment extends AbstractFermatFragment imple
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
 
-        manager = ((AssetFactorySession) appSession).getModuleManager();
-//        try {
+        moduleManager = appSession.getModuleManager();
         errorManager = appSession.getErrorManager();
-        settingsManager = appSession.getModuleManager().getSettingsManager();
+
         getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
 //        } catch (CantGetCryptoWalletException e) {
 //            referenceWalletSession.getErrorManager().reportUnexpectedWalletException(Wallets.CWP_WALLET_RUNTIME_WALLET_BITCOIN_WALLET_ALL_BITDUBAI, UnexpectedWalletExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
@@ -80,7 +78,7 @@ public class SettingsFactoryNetworkFragment extends AbstractFermatFragment imple
             rootView = inflater.inflate(R.layout.dap_factory_settings_main_network, container, false);
 
             try {
-                settings = settingsManager.loadAndGetSettings(appSession.getAppPublicKey());
+                settings = moduleManager.loadAndGetSettings(appSession.getAppPublicKey());
             } catch (Exception e) {
                 settings = null;
             }
@@ -92,7 +90,7 @@ public class SettingsFactoryNetworkFragment extends AbstractFermatFragment imple
             }
 
             setUpUi();
-            configureToolbar();
+//            configureToolbar();
 
             return rootView;
         } catch (Exception e) {
@@ -105,20 +103,31 @@ public class SettingsFactoryNetworkFragment extends AbstractFermatFragment imple
 
 
     @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        super.onCreateOptionsMenu(menu, inflater);
-        menu.add(0, SessionConstantsAssetFactory.IC_ACTION_SETTINGS_NETWORK, 0, "help").setIcon(R.drawable.dap_asset_factory_help_icon)
-                .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);    }
+    public void onOptionMenuPrepared(Menu menu){
+        super.onOptionMenuPrepared(menu);
+//        menu.add(0, SessionConstantsAssetFactory.IC_ACTION_SETTINGS_NETWORK, 0, "help").setIcon(R.drawable.dap_asset_factory_help_icon)
+//                .setShowAsAction(MenuItem.SHOW_AS_ACTION_WITH_TEXT);
+    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         try {
             int id = item.getItemId();
 
-            if (id == SessionConstantsAssetFactory.IC_ACTION_SETTINGS_NETWORK) {
-                setUpFactorySettingsNetwork(settingsManager.loadAndGetSettings(appSession.getAppPublicKey()).isPresentationHelpEnabled());
-                return true;
+            switch (id) {
+                //case IC_ACTION_SETTINGS_NETWORK:
+                case 2:
+                    setUpFactorySettingsNetwork(moduleManager.loadAndGetSettings(appSession.getAppPublicKey()).isPresentationHelpEnabled());
+                    break;
+//                case 1:
+//                    changeActivity(Activities.CHT_CHAT_GEOLOCATION_IDENTITY, appSession.getAppPublicKey());
+//                    break;
             }
+
+//            if (id == SessionConstantsAssetFactory.IC_ACTION_SETTINGS_NETWORK) {
+//                setUpFactorySettingsNetwork(moduleManager.loadAndGetSettings(appSession.getAppPublicKey()).isPresentationHelpEnabled());
+//                return true;
+//            }
 
         } catch (Exception e) {
             errorManager.reportUnexpectedUIException(UISource.ACTIVITY, UnexpectedUIExceptionSeverity.UNSTABLE, FermatException.wrapException(e));
@@ -134,7 +143,6 @@ public class SettingsFactoryNetworkFragment extends AbstractFermatFragment imple
                     .setBannerRes(R.drawable.banner_asset_factory)
                     .setIconRes(R.drawable.asset_factory)
                     .setVIewColor(R.color.dap_asset_factory_view_color)
-                    .setTitleTextColor(R.color.dap_asset_factory_view_color)
                     .setSubTitle(R.string.dap_asset_factory_editor_subTitle)
                     .setBody(R.string.dap_asset_factory_editor_body)
                     .setTemplateType(PresentationDialog.TemplateType.TYPE_PRESENTATION_WITHOUT_IDENTITIES)
@@ -148,13 +156,14 @@ public class SettingsFactoryNetworkFragment extends AbstractFermatFragment imple
     }
 
     private void configureToolbar() {
-        Toolbar toolbar = getPaintActivtyFeactures().getToolbar();
+        Toolbar toolbar = getToolbar();
         if (toolbar != null) {
-            toolbar.setBackgroundColor(Color.parseColor("#1d1d25"));
+            toolbar.setBackgroundColor(getResources().getColor(R.color.redeem_home_bar_color));
             toolbar.setTitleTextColor(Color.WHITE);
+            toolbar.setBottom(Color.WHITE);
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
                 Window window = getActivity().getWindow();
-                window.setStatusBarColor(Color.parseColor("#1d1d25"));
+                window.setStatusBarColor(getResources().getColor(R.color.redeem_home_bar_color));
             }
         }
     }
@@ -178,8 +187,10 @@ public class SettingsFactoryNetworkFragment extends AbstractFermatFragment imple
         try {
             settings.setBlockchainNetworkPosition(position);
 
-            settingsManager.persistSettings(appSession.getAppPublicKey(), settings);
-            manager.changeNetworkType(dataSet);
+            if (moduleManager != null) {
+                moduleManager.persistSettings(appSession.getAppPublicKey(), settings);
+                moduleManager.changeNetworkType(dataSet);
+            }
         } catch (CantPersistSettingsException e) {
             e.printStackTrace();
         }

@@ -1,9 +1,12 @@
 import com.bitdubai.fermat_api.FermatException;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
 import com.bitdubai.fermat_api.layer.all_definition.enums.CryptoCurrency;
 import com.bitdubai.fermat_api.layer.all_definition.enums.FiatCurrency;
 import com.bitdubai.fermat_api.layer.all_definition.enums.Platforms;
 import com.bitdubai.fermat_api.layer.all_definition.enums.WalletsPublicKeys;
+import com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.BitcoinFee;
+import com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.FeeOrigin;
 import com.bitdubai.fermat_cbp_api.all_definition.enums.OriginTransaction;
 import com.bitdubai.fermat_cbp_api.layer.middleware.matching_engine.enums.EarningPairState;
 import com.bitdubai.fermat_cbp_api.layer.middleware.matching_engine.enums.EarningTransactionState;
@@ -25,7 +28,6 @@ import com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer
 import com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer.bitdubai.version_1.structure.earning_extraction.CashEarningExtractor;
 import com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer.bitdubai.version_1.structure.earning_extraction.CryptoEarningExtractor;
 import com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer.bitdubai.version_1.structure.earning_extraction.EarningExtractorManagerImpl;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -58,6 +60,7 @@ import static org.mockito.Mockito.when;
 public class EarningsTransferenceToAssociatedWalletTest {
     private static final String BANK_ACCOUNT_NUMBER_2 = "987654321";
     private static final String BANK_ACCOUNT_NUMBER_1 = "123456789";
+    private static final String BROKER_IDENTITY_PUBLIC_KEY = "brokerIdentityPublicKey";
     private static final String BROKER_WALLET_PUBLIC_KEY = WalletsPublicKeys.CBP_CRYPTO_BROKER_WALLET.getCode();
 
     @Mock
@@ -99,7 +102,7 @@ public class EarningsTransferenceToAssociatedWalletTest {
 
         doNothing().when(dao).markEarningTransactionAsExtracted(any(UUID.class));
 
-        transaction = new EarningExtractorManagerImpl(cryptoBrokerWalletManager);
+        transaction = new EarningExtractorManagerImpl(cryptoBrokerWalletManager, dao);
         transaction.addEarningExtractor(new BankEarningExtractor(bankMoneyDestockManager));
         transaction.addEarningExtractor(new CashEarningExtractor(cashMoneyDestockManager));
         transaction.addEarningExtractor(new CryptoEarningExtractor(cryptoMoneyDestockManager));
@@ -117,7 +120,6 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 linkedCurrency,
                 new WalletReference(earningWalletPublicKey),
                 EarningPairState.ASSOCIATED,
-                dao,
                 new WalletReference(BROKER_WALLET_PUBLIC_KEY));
 
         final List<EarningTransaction> earningTransactions = new ArrayList<>();
@@ -146,7 +148,8 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 dao));
 
         // exercise
-        boolean earningsExtracted = transaction.extractEarnings(earningsPair, earningTransactions);
+        boolean earningsExtracted = transaction.extractEarnings(BROKER_IDENTITY_PUBLIC_KEY, earningsPair, earningTransactions,
+                BitcoinFee.NORMAL.getFee(), FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT);
 
         // assertion
         assertThat(earningsExtracted).isTrue();
@@ -185,7 +188,6 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 linkedCurrency,
                 new WalletReference(earningWalletPublicKey),
                 EarningPairState.ASSOCIATED,
-                dao,
                 new WalletReference(BROKER_WALLET_PUBLIC_KEY));
 
         final List<EarningTransaction> earningTransactions = new ArrayList<>();
@@ -206,7 +208,8 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 dao));
 
         // exercise
-        boolean earningsExtracted = transaction.extractEarnings(earningsPair, earningTransactions);
+        boolean earningsExtracted = transaction.extractEarnings(BROKER_IDENTITY_PUBLIC_KEY, earningsPair, earningTransactions,
+                BitcoinFee.NORMAL.getFee(), FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT);
 
         // assertion
         assertThat(earningsExtracted).isFalse();
@@ -232,7 +235,6 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 linkedCurrency,
                 new WalletReference(earningWalletPublicKey),
                 EarningPairState.ASSOCIATED,
-                dao,
                 new WalletReference(BROKER_WALLET_PUBLIC_KEY));
 
         final List<EarningTransaction> earningTransactions = new ArrayList<>();
@@ -245,7 +247,8 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 dao));
 
         // exercise
-        boolean earningsExtracted = transaction.extractEarnings(earningsPair, earningTransactions);
+        boolean earningsExtracted = transaction.extractEarnings(BROKER_IDENTITY_PUBLIC_KEY, earningsPair, earningTransactions,
+                BitcoinFee.NORMAL.getFee(), FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT);
 
         // assertion
         assertThat(earningsExtracted).isTrue();
@@ -278,7 +281,6 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 linkedCurrency,
                 new WalletReference(earningWalletPublicKey),
                 EarningPairState.ASSOCIATED,
-                dao,
                 new WalletReference(BROKER_WALLET_PUBLIC_KEY));
 
         final List<EarningTransaction> earningTransactions = new ArrayList<>();
@@ -290,7 +292,8 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 System.currentTimeMillis(),
                 dao));
 
-        boolean earningsExtracted = transaction.extractEarnings(earningsPair, earningTransactions);
+        boolean earningsExtracted = transaction.extractEarnings(BROKER_IDENTITY_PUBLIC_KEY, earningsPair, earningTransactions,
+                BitcoinFee.NORMAL.getFee(), FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT);
 
         // assertion
         assertThat(earningsExtracted).isFalse();
@@ -313,7 +316,6 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 linkedCurrency,
                 new WalletReference(earningWalletPublicKey),
                 EarningPairState.ASSOCIATED,
-                dao,
                 new WalletReference(BROKER_WALLET_PUBLIC_KEY));
 
         final List<EarningTransaction> earningTransactions = new ArrayList<>();
@@ -326,7 +328,8 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 dao));
 
         // exercise
-        boolean earningsExtracted = transaction.extractEarnings(earningsPair, earningTransactions);
+        boolean earningsExtracted = transaction.extractEarnings(BROKER_IDENTITY_PUBLIC_KEY, earningsPair, earningTransactions,
+                BitcoinFee.NORMAL.getFee(), FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT);
 
         // assertion
         assertThat(earningsExtracted).isTrue();
@@ -344,7 +347,9 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 any(BigDecimal.class),
                 eq(OriginTransaction.EARNING_EXTRACTION),
                 eq(earningsPair.getId().toString()),
-                eq(BlockchainNetworkType.getDefaultBlockchainNetworkType()));
+                eq(BlockchainNetworkType.getDefaultBlockchainNetworkType()),
+                eq(BitcoinFee.NORMAL.getFee()),
+                eq(FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT));
     }
 
     @Test
@@ -359,7 +364,6 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 linkedCurrency,
                 new WalletReference(earningWalletPublicKey),
                 EarningPairState.ASSOCIATED,
-                dao,
                 new WalletReference(BROKER_WALLET_PUBLIC_KEY));
 
         final List<EarningTransaction> earningTransactions = new ArrayList<>();
@@ -372,7 +376,8 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 dao));
 
         // exercise
-        boolean earningsExtracted = transaction.extractEarnings(earningsPair, earningTransactions);
+        boolean earningsExtracted = transaction.extractEarnings(BROKER_IDENTITY_PUBLIC_KEY, earningsPair, earningTransactions,
+                BitcoinFee.NORMAL.getFee(), FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT);
 
         // assertion
         assertThat(earningsExtracted).isFalse();
@@ -395,7 +400,6 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 linkedCurrency,
                 new WalletReference(earningWalletPublicKey),
                 EarningPairState.ASSOCIATED,
-                dao,
                 new WalletReference(BROKER_WALLET_PUBLIC_KEY));
 
         final List<EarningTransaction> earningTransactions = new ArrayList<>();
@@ -424,7 +428,8 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 dao));
 
         // exercise
-        boolean earningsExtracted = transaction.extractEarnings(earningsPair, earningTransactions);
+        boolean earningsExtracted = transaction.extractEarnings(BROKER_IDENTITY_PUBLIC_KEY, earningsPair, earningTransactions,
+                BitcoinFee.NORMAL.getFee(), FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT);
 
         // assertion
         assertThat(earningsExtracted).isTrue();
@@ -452,7 +457,8 @@ public class EarningsTransferenceToAssociatedWalletTest {
 
 
         // exercise
-        earningsExtracted = transaction.extractEarnings(earningsPair, earningTransactions);
+        earningsExtracted = transaction.extractEarnings(BROKER_IDENTITY_PUBLIC_KEY, earningsPair, earningTransactions,
+                BitcoinFee.NORMAL.getFee(), FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT);
 
         // assertion
         assertThat(earningsExtracted).isFalse();
@@ -481,13 +487,13 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 linkedCurrency,
                 new WalletReference(earningWalletPublicKey),
                 EarningPairState.ASSOCIATED,
-                dao,
                 new WalletReference(BROKER_WALLET_PUBLIC_KEY));
 
         final List<EarningTransaction> earningTransactions = new ArrayList<>();
 
         // exercise
-        boolean earningsExtracted = transaction.extractEarnings(earningsPair, earningTransactions);
+        boolean earningsExtracted = transaction.extractEarnings(BROKER_IDENTITY_PUBLIC_KEY, earningsPair, earningTransactions,
+                BitcoinFee.NORMAL.getFee(), FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT);
 
         // assertion
         assertThat(earningsExtracted).isFalse();
@@ -508,7 +514,6 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 linkedCurrency,
                 new WalletReference(earningWalletPublicKey),
                 EarningPairState.ASSOCIATED,
-                dao,
                 new WalletReference(BROKER_WALLET_PUBLIC_KEY));
 
         final List<EarningTransaction> earningTransactions = new ArrayList<>();
@@ -529,7 +534,8 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 dao));
 
         // exercise
-        boolean earningsExtracted = transaction.extractEarnings(earningsPair, earningTransactions);
+        boolean earningsExtracted = transaction.extractEarnings(BROKER_IDENTITY_PUBLIC_KEY, earningsPair, earningTransactions,
+                BitcoinFee.NORMAL.getFee(), FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT);
 
         // assertion
         assertThat(earningsExtracted).isFalse();
@@ -555,7 +561,6 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 linkedCurrency,
                 new WalletReference(earningWalletPublicKey),
                 EarningPairState.ASSOCIATED,
-                dao,
                 new WalletReference(BROKER_WALLET_PUBLIC_KEY));
 
         final List<EarningTransaction> earningTransactions = new ArrayList<>();
@@ -568,13 +573,15 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 dao));
 
         // exercise
-        catchException(transaction).extractEarnings(earningsPair, null);
+        catchException(transaction).extractEarnings(BROKER_IDENTITY_PUBLIC_KEY, earningsPair, null,
+                BitcoinFee.NORMAL.getFee(), FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT);
 
         // assertions
         assertThat(caughtException()).isInstanceOf(CantExtractEarningsException.class);
 
         // exercise
-        catchException(transaction).extractEarnings(null, earningTransactions);
+        catchException(transaction).extractEarnings(BROKER_IDENTITY_PUBLIC_KEY, null, earningTransactions,
+                BitcoinFee.NORMAL.getFee(), FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT);
 
         // assertions
         assertThat(caughtException()).isInstanceOf(CantExtractEarningsException.class);
@@ -601,13 +608,13 @@ public class EarningsTransferenceToAssociatedWalletTest {
                 linkedCurrency,
                 new WalletReference(earningWalletPublicKey),
                 EarningPairState.ASSOCIATED,
-                dao,
                 new WalletReference(BROKER_WALLET_PUBLIC_KEY));
 
-        transaction = new EarningExtractorManagerImpl(cryptoBrokerWalletManager);
+        transaction = new EarningExtractorManagerImpl(cryptoBrokerWalletManager, dao);
 
         // exercise
-        catchException(transaction).extractEarnings(earningsPair, earningTransactions);
+        catchException(transaction).extractEarnings(BROKER_IDENTITY_PUBLIC_KEY, earningsPair, earningTransactions,
+                BitcoinFee.NORMAL.getFee(), FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT);
 
         // assertions
         assertThat(caughtException()).isInstanceOf(CantExtractEarningsException.class);

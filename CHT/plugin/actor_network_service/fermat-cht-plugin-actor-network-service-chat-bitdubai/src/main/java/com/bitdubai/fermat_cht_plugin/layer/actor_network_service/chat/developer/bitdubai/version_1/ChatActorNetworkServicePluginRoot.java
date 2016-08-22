@@ -2,8 +2,8 @@ package com.bitdubai.fermat_cht_plugin.layer.actor_network_service.chat.develope
 
 import com.bitdubai.fermat_api.CantStartPluginException;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.FermatManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.utils.PluginVersionReference;
-import com.bitdubai.fermat_api.layer.all_definition.components.enums.PlatformComponentType;
 import com.bitdubai.fermat_api.layer.all_definition.developer.DatabaseManagerForDevelopers;
 import com.bitdubai.fermat_api.layer.all_definition.developer.DeveloperDatabase;
 import com.bitdubai.fermat_api.layer.all_definition.developer.DeveloperDatabaseTable;
@@ -34,18 +34,23 @@ import com.bitdubai.fermat_cht_plugin.layer.actor_network_service.chat.developer
 import com.bitdubai.fermat_cht_plugin.layer.actor_network_service.chat.developer.bitdubai.version_1.messages.NetworkServiceMessage;
 import com.bitdubai.fermat_cht_plugin.layer.actor_network_service.chat.developer.bitdubai.version_1.messages.RequestMessage;
 import com.bitdubai.fermat_cht_plugin.layer.actor_network_service.chat.developer.bitdubai.version_1.structure.ChatActorNetworkServiceManager;
-import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.network_services.base.AbstractNetworkServiceBase;
-import com.bitdubai.fermat_p2p_api.layer.p2p_communication.commons.contents.FermatMessage;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.network_services.abstract_classes.AbstractActorNetworkService;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.network_services.database.exceptions.CantUpdateRecordDataBaseException;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.network_services.database.exceptions.RecordNotFoundException;
 
 import java.util.List;
 
 /**
+ * This plug-in is the responsible for the managing of the actor connections and actor publishing of the chat actors.
+ * <p/>
  * Created by José D. Vilchez A. (josvilchezalmera@gmail.com) on 07/04/16.
- * Edited by Miguel Rincon on 19/04/2016
+ * Edited by Leon Acosta - (laion.cj91@gmail.com) on 18/05/2016.
+ *
+ * @version 1.0
+ * @since Java JDK 1.7
  */
 @PluginInfo(createdBy = "José D. Vilchez A", maintainerMail = "franklinmarcano1970@gmail.com", platform = Platforms.CHAT_PLATFORM, layer = Layers.ACTOR_NETWORK_SERVICE, plugin = Plugins.CHAT_ACTOR_NETWORK_SERVICE)
-public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBase implements DatabaseManagerForDevelopers {
+public class ChatActorNetworkServicePluginRoot extends AbstractActorNetworkService implements DatabaseManagerForDevelopers {
 
     /**
      * Chat Actor Network Service member variables.
@@ -59,10 +64,7 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
         super(
                 new PluginVersionReference(new Version()),
                 EventSource.ACTOR_NETWORK_SERVICE_CHAT,
-                PlatformComponentType.NETWORK_SERVICE,
-                NetworkServiceType.ACTOR_CHAT,
-                "Chat Actor Network Service",
-                null
+                NetworkServiceType.ACTOR_CHAT
         );
     }
 
@@ -72,7 +74,7 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
     }
 
     @Override
-    protected void onStart() throws CantStartPluginException {
+    protected void onActorNetworkServiceStart() throws CantStartPluginException {
 
         try {
 
@@ -81,10 +83,8 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
             chatActorNetworkServiceDao.initialize();
 
             fermatManager = new ChatActorNetworkServiceManager(
-                    getCommunicationsClientConnection(),
                     chatActorNetworkServiceDao,
-                    this,
-                    getPluginVersionReference()
+                    this
             );
 
             System.out.println("******* Init Chat Actor Network Service ******");
@@ -96,40 +96,9 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
         }
     }
 
-    @Override
-    public void pause() {
-
-        fermatManager.setPlatformComponentProfile(null);
-        getCommunicationNetworkServiceConnectionManager().pause();
-
-        super.pause();
-    }
 
     @Override
-    public void resume() {
-
-        // resume connections manager.
-        getCommunicationNetworkServiceConnectionManager().resume();
-
-        super.resume();
-    }
-
-    @Override
-    public void stop() {
-
-        fermatManager.setPlatformComponentProfile(null);
-        getCommunicationNetworkServiceConnectionManager().stop();
-
-        super.stop();
-    }
-
-    @Override
-    protected void onNetworkServiceRegistered() {
-        fermatManager.setPlatformComponentProfile(this.getNetworkServiceProfile());
-    }
-
-    @Override
-    public final void onSentMessage(final FermatMessage fermatMessage) {
+    public final void onSentMessage(final com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.network_services.database.entities.NetworkServiceMessage fermatMessage) {
         System.out.println("************ Mensaje supuestamente enviado chat actor network service");
 
         try {
@@ -158,7 +127,7 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
 
                 default:
                     throw new CantHandleNewMessagesException(
-                            "message type: " +networkServiceMessage.getMessageType().name(),
+                            "message type: " + networkServiceMessage.getMessageType().name(),
                             "Message type not handled."
                     );
             }
@@ -170,7 +139,7 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
     }
 
     @Override
-    public void onNewMessagesReceive(FermatMessage fermatMessage) {
+    public void onNewMessageReceived(com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.network_services.database.entities.NetworkServiceMessage fermatMessage) {
 
         System.out.println("****** CHAT ACTOR NETWORK SERVICE NEW MESSAGE RECEIVED: " + fermatMessage);
         try {
@@ -190,9 +159,6 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
 
                     receiveConnectionInformation(informationMessage);
 
-                    String destinationPublicKey = chatActorNetworkServiceDao.getDestinationPublicKey(informationMessage.getRequestId());
-
-                    getCommunicationNetworkServiceConnectionManager().closeConnection(destinationPublicKey);
                     break;
 
                 case CONNECTION_REQUEST:
@@ -204,12 +170,11 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
 
                     receiveRequest(requestMessage);
 
-                    getCommunicationNetworkServiceConnectionManager().closeConnection(requestMessage.getSenderPublicKey());
                     break;
 
                 default:
                     throw new CantHandleNewMessagesException(
-                            "message type: " +networkServiceMessage.getMessageType().name(),
+                            "message type: " + networkServiceMessage.getMessageType().name(),
                             "Message type not handled."
                     );
             }
@@ -220,8 +185,8 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
         }
 
         try {
-            getCommunicationNetworkServiceConnectionManager().getIncomingMessageDao().markAsRead(fermatMessage);
-        } catch (com.bitdubai.fermat_p2p_api.layer.all_definition.communication.network_services.exceptions.CantUpdateRecordDataBaseException e) {
+            getNetworkServiceConnectionManager().getIncomingMessagesDao().markAsRead(fermatMessage);
+        } catch (CantUpdateRecordDataBaseException | RecordNotFoundException e) {
             reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
         }
     }
@@ -264,7 +229,7 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
 
                 default:
                     throw new CantHandleNewMessagesException(
-                            "action not supported: " +informationMessage.getAction(),
+                            "action not supported: " + informationMessage.getAction(),
                             "action not handled."
                     );
             }
@@ -273,17 +238,16 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
             eventToRaise.setSource(eventSource);
             eventManager.raiseEvent(eventToRaise);
 
-        } catch(CantAcceptConnectionRequestException | CantDenyConnectionRequestException | ConnectionRequestNotFoundException | CantDisconnectException e) {
+        } catch (CantAcceptConnectionRequestException | CantDenyConnectionRequestException | ConnectionRequestNotFoundException | CantDisconnectException e) {
             // i inform to error manager the error.
             reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantHandleNewMessagesException(e, "", "Error in Chat ANS Dao.");
-        } catch(Exception e) {
+        } catch (Exception e) {
 
             reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantHandleNewMessagesException(e, "", "Unhandled Exception.");
         }
     }
-
 
     /**
      * I indicate to the Agent the action that it must take:
@@ -294,12 +258,11 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
 
         try {
 
-            if (chatActorNetworkServiceDao.existsConnectionRequest(requestMessage.getRequestId()))
-                return;
+//            if (chatActorNetworkServiceDao.existsConnectionRequest(requestMessage.getRequestId()))
+//                return;
 
-
-            final ProtocolState           state  = ProtocolState.PENDING_LOCAL_ACTION;
-            final RequestType type   = RequestType  .RECEIVED             ;
+            final ProtocolState state = ProtocolState.PENDING_LOCAL_ACTION;
+            final RequestType type = RequestType.RECEIVED;
 
             final ChatConnectionInformation connectionInformation = new ChatConnectionInformation(
                     requestMessage.getRequestId(),
@@ -322,11 +285,11 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
             eventToRaise.setSource(eventSource);
             eventManager.raiseEvent(eventToRaise);
 
-        } catch(CantRequestConnectionException e) {
+        } catch (CantRequestConnectionException e) {
             // i inform to error manager the error.
             reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantHandleNewMessagesException(e, "", "Error in Chat ANS Dao.");
-        } catch(Exception e) {
+        } catch (Exception e) {
 
             reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantHandleNewMessagesException(e, "", "Unhandled Exception.");
@@ -361,7 +324,7 @@ public class ChatActorNetworkServicePluginRoot extends AbstractNetworkServiceBas
                 pluginId
         ).getDatabaseTableContent(
                 developerObjectFactory,
-                developerDatabase     ,
+                developerDatabase,
                 developerDatabaseTable
         );
     }

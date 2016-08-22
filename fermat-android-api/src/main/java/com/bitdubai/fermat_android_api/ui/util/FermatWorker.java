@@ -57,7 +57,7 @@ public abstract class FermatWorker extends Thread {
     @Override
     public void run() {
         try {
-            if(mHandler==null)mHandler = new Handler(context.getMainLooper());
+            if (mHandler == null) mHandler = new Handler(context.getMainLooper());
             //todo: check connection availability
             final Object result = doInBackground();
             if (context != null && callBack != null) {
@@ -67,7 +67,7 @@ public abstract class FermatWorker extends Thread {
                         try {
                             callBack.onPostExecute(result);
                         } catch (Exception ex) {
-                            Log.i(TAG, "Cannot call onPostExecute method...", ex);
+                            Log.e(TAG, "Cannot call onPostExecute method...", ex);
                         }
                     }
                 });
@@ -80,7 +80,7 @@ public abstract class FermatWorker extends Thread {
                         try {
                             callBack.onErrorOccurred(ex);
                         } catch (Exception ex) {
-                            Log.i(TAG, "Cannot call onErrorOccurred...", ex);
+                            Log.e(TAG, "Cannot call onErrorOccurred...", ex);
                         }
                     }
                 });
@@ -112,7 +112,7 @@ public abstract class FermatWorker extends Thread {
         return executor;
     }
 
-    public void shutdownNow(){
+    public void shutdownNow() {
         interrupt();
     }
 

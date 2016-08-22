@@ -21,7 +21,8 @@
             android:layout_gravity="center_vertical"
             android:textColor="@color/black"
             android:textSize="14sp"
-            tools:text="CASH"
+            tools:text="@string/cbw_cash"
+            android:textAllCaps="true"
             android:layout_weight="3"
             />
 
@@ -41,6 +42,8 @@
             android:layout_width="0px"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
+            android:clickable="false"
+            android:longClickable="false"
             android:layout_weight="1"
             android:buttonTint="@color/cbw_wizard_color_2"
             />

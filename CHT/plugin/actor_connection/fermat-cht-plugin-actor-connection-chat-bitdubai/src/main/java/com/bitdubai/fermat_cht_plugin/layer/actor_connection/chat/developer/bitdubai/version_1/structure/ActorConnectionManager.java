@@ -15,6 +15,7 @@ import com.bitdubai.fermat_api.layer.actor_connection.common.exceptions.Connecti
 import com.bitdubai.fermat_api.layer.actor_connection.common.exceptions.UnexpectedConnectionStateException;
 import com.bitdubai.fermat_api.layer.actor_connection.common.exceptions.UnsupportedActorTypeException;
 import com.bitdubai.fermat_api.layer.actor_connection.common.structure_common_classes.ActorIdentityInformation;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.utils.PluginVersionReference;
 import com.bitdubai.fermat_api.layer.all_definition.enums.Actors;
 import com.bitdubai.fermat_cht_api.layer.actor_connection.interfaces.ChatActorConnectionManager;
@@ -31,8 +32,6 @@ import com.bitdubai.fermat_cht_api.layer.actor_network_service.interfaces.ChatMa
 import com.bitdubai.fermat_cht_api.layer.actor_network_service.utils.ChatConnectionInformation;
 import com.bitdubai.fermat_cht_plugin.layer.actor_connection.chat.developer.bitdubai.version_1.ChatActorConnectionPluginRoot;
 import com.bitdubai.fermat_cht_plugin.layer.actor_connection.chat.developer.bitdubai.version_1.database.ChatActorConnectionDao;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 
 import java.util.UUID;
 
@@ -76,14 +75,59 @@ public class ActorConnectionManager implements ChatActorConnectionManager {
             /**
              * Here I generate the needed information to register the new actor connection record.
              */
-            final UUID newConnectionId = UUID.randomUUID();
+            UUID newConnectionId = UUID.randomUUID();
             final ChatLinkedActorIdentity linkedIdentity = new ChatLinkedActorIdentity(
                     actorSending.getPublicKey(),
                     actorSending.getActorType()
             );
 
-            final ConnectionState connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+//            ActorConnection actorConnectionCache = dao.chatActorConnectionExists(linkedIdentity,actorReceiving.getPublicKey());
+            ConnectionState connectionState = null;
+//            if(actorConnectionCache!=null)
+//            connectionState = actorConnectionCache.getStatus();
+//
+//            if(connectionState != null && connectionState.equals(ConnectionState.PENDING_LOCALLY_ACCEPTANCE))
+//                connectionState = ConnectionState.CONNECTED;
+//            else
+
+            ChatActorConnection oldActorConnection = dao.chatActorConnectionExists(linkedIdentity, actorReceiving.getPublicKey());
+            if (oldActorConnection != null) {
+                //if (!oldActorConnection.getStatus().getCode().equals(ConnectionState.CONNECTED.getCode()))
+                connectionState = oldActorConnection.getConnectionState();//ConnectionState.CONNECTED;
+
+                //TODO: Vilchez esto debemos de analizar todo lo que estaba no funcionaba, pero de esta forma quedo estable
+                if (connectionState.getCode().equals(ConnectionState.DISCONNECTED_LOCALLY.getCode()))
+                    connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+                if (connectionState.getCode().equals(ConnectionState.DISCONNECTED_REMOTELY.getCode()))
+                    connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+                if (connectionState.getCode().equals(ConnectionState.DENIED_LOCALLY.getCode()))
+                    connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+                if (connectionState.getCode().equals(ConnectionState.DENIED_REMOTELY.getCode()))
+                    connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+                //TODO: Esto lo coloque porque cada vez que llegaba aca se creaba un nuevo ID y entonces cuando tratabas desconectar explotaba porque no lo conseguia
+                newConnectionId = oldActorConnection.getConnectionId();
+                //else
+                //    connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+
+            } else connectionState = ConnectionState.PENDING_REMOTELY_ACCEPTANCE;
+
             final long currentTime = System.currentTimeMillis();
+
+            if (oldActorConnection != null && oldActorConnection.getConnectionState().getCode().equals(ConnectionState.PENDING_LOCALLY_ACCEPTANCE.getCode())){
+                final ChatActorConnection actorConnectionAccepted = new ChatActorConnection(
+                        oldActorConnection.getConnectionId(),
+                        oldActorConnection.getLinkedIdentity(),
+                        oldActorConnection.getPublicKey(),
+                        oldActorConnection.getAlias(),
+                        oldActorConnection.getImage(),
+                        ConnectionState.CONNECTED,
+                        oldActorConnection.getCreationTime(),
+                        oldActorConnection.getUpdateTime(),
+                        oldActorConnection.getStatus()
+                );
+                dao.updateChatActorConnectionRequest(actorConnectionAccepted);
+                return;
+            }
 
             final ChatActorConnection actorConnection = new ChatActorConnection(
                     newConnectionId,
@@ -93,13 +137,14 @@ public class ActorConnectionManager implements ChatActorConnectionManager {
                     actorReceiving.getImage(),
                     connectionState,
                     currentTime,
-                    currentTime
+                    currentTime,
+                    actorReceiving.getStatus()
             );
 
             /**
-             * I register the actor connection.
-             */
-            dao.registerChatActorConnection(actorConnection);
+            * I register the actor connection.
+                    */
+            if (!dao.registerChatActorConnection(actorConnection, oldActorConnection)) return;
 
             final ChatConnectionInformation connectionInformation = new ChatConnectionInformation(
                     newConnectionId,
@@ -376,6 +421,11 @@ public class ActorConnectionManager implements ChatActorConnectionManager {
             chatActorConnectionPluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, exception);
             throw new CantAcceptActorConnectionRequestException(exception, "connectionId: " + connectionId, "Unhandled error.");
         }
+    }
+
+    @Override
+    public void updateActorConnection(ChatActorConnection chatActorConnection) {
+        this.dao.updateChatActorConnection(chatActorConnection);
     }
 }
 

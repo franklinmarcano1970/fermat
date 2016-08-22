@@ -13,7 +13,7 @@ import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.Cant
 import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.CantOpenDatabaseException;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.DatabaseNotFoundException;
 import com.bitdubai.fermat_api.layer.osa_android.file_system.PluginFileSystem;
-import com.bitdubai.fermat_cbp_api.layer.user_level_business_transaction.customer_broker_purchase.interfaces.CustomerBrokerPurchase;
+import com.bitdubai.fermat_cbp_api.layer.user_level_business_transaction.common.enums.TransactionStatus;
 import com.bitdubai.fermat_cbp_api.layer.user_level_business_transaction.customer_broker_purchase.interfaces.CustomerBrokerPurchaseEventRecord;
 import com.bitdubai.fermat_cbp_api.layer.user_level_business_transaction.customer_broker_sale.interfaces.CustomerBrokerSale;
 import com.bitdubai.fermat_cbp_plugin.layer.user_level_business_transaction.customer_broker_sale.developer.bitdubai.version_1.exceptions.DatabaseOperationException;
@@ -101,20 +101,17 @@ public class UserLevelBusinessTransactionCustomerBrokerSaleDatabaseDao {
         }
     }
 
-    public List<CustomerBrokerSale> getCustomerBrokerSales(DatabaseTableFilter filter) throws DatabaseOperationException, InvalidParameterException
-    {
+    public List<CustomerBrokerSale> getCustomerBrokerSales(DatabaseTableFilter filter) throws DatabaseOperationException, InvalidParameterException {
         Database database = null;
         List<CustomerBrokerSale> customerBrokerSales = new ArrayList<>();
-        try{
+        try {
             database = openDatabase();
 
-            for (DatabaseTableRecord record : getCustomerBrokerSaleRecordData(filter))
-            {
+            for (DatabaseTableRecord record : getCustomerBrokerSaleRecordData(filter)) {
                 final CustomerBrokerSale customerBrokerSale = getCustomerBrokerSale(record);
                 customerBrokerSales.add(customerBrokerSale);
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             if (database != null)
                 database.closeDatabase();
             throw new DatabaseOperationException(DatabaseOperationException.DEFAULT_MESSAGE, e, "error trying to get customers Broker Purchase from the database with filter: " + filter.toString(), null);
@@ -125,8 +122,7 @@ public class UserLevelBusinessTransactionCustomerBrokerSaleDatabaseDao {
 
 
     public void saveCustomerBrokerSaleTransactionData(CustomerBrokerSale customerBrokerSale) throws DatabaseOperationException, MissingCustomerBrokerSaleDataException {
-        try
-        {
+        try {
             database = openDatabase();
             DatabaseTransaction transaction = database.newTransaction();
 
@@ -134,7 +130,7 @@ public class UserLevelBusinessTransactionCustomerBrokerSaleDatabaseDao {
             DatabaseTableRecord customerBrokerPurchaseRecord = getCustomerBrokerSaleRecord(customerBrokerSale);
             DatabaseTableFilter filter = table.getEmptyTableFilter();
             filter.setType(DatabaseFilterType.EQUAL);
-            filter.setValue(customerBrokerSale.getTransactionId().toString());
+            filter.setValue(customerBrokerSale.getTransactionId());
             filter.setColumn(UserLevelBusinessTransactionCustomerBrokerSaleConstants.CUSTOMER_BROKER_SALE_CONTRACT_TRANSACTION_ID_COLUMN_NAME);
 
             if (isNewRecord(table, filter))
@@ -148,7 +144,7 @@ public class UserLevelBusinessTransactionCustomerBrokerSaleDatabaseDao {
             database.executeTransaction(transaction);
             database.closeDatabase();
 
-        }catch (Exception e) {
+        } catch (Exception e) {
             if (database != null)
                 database.closeDatabase();
             throw new DatabaseOperationException(DatabaseOperationException.DEFAULT_MESSAGE, e, "Error trying to save the Customer Broker Purchase Transaction in the database.", null);
@@ -166,18 +162,26 @@ public class UserLevelBusinessTransactionCustomerBrokerSaleDatabaseDao {
         return table.getRecords();
     }
 
-    private CustomerBrokerSale getCustomerBrokerSale(final DatabaseTableRecord record) throws CantLoadTableToMemoryException, DatabaseOperationException, InvalidParameterException
-    {
-        CustomerBrokerSaleImpl customerBrokerSale = new CustomerBrokerSaleImpl(record.getStringValue(UserLevelBusinessTransactionCustomerBrokerSaleConstants.CUSTOMER_BROKER_SALE_TRANSACTION_ID_COLUMN_NAME),
-                record.getStringValue(UserLevelBusinessTransactionCustomerBrokerSaleConstants.CUSTOMER_BROKER_SALE_CONTRACT_TRANSACTION_ID_COLUMN_NAME),
-                record.getLongValue(UserLevelBusinessTransactionCustomerBrokerSaleConstants.CUSTOMER_BROKER_SALE_TIMESTAMP_COLUMN_NAME),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null);
-        return customerBrokerSale;
+    private CustomerBrokerSale getCustomerBrokerSale(final DatabaseTableRecord record) throws CantLoadTableToMemoryException, DatabaseOperationException, InvalidParameterException {
+        return new CustomerBrokerSaleImpl(
+                record.getStringValue(UserLevelBusinessTransactionCustomerBrokerSaleConstants.
+                        CUSTOMER_BROKER_SALE_TRANSACTION_ID_COLUMN_NAME),
+                record.getStringValue(UserLevelBusinessTransactionCustomerBrokerSaleConstants.
+                        CUSTOMER_BROKER_SALE_CONTRACT_TRANSACTION_ID_COLUMN_NAME),
+                record.getLongValue(UserLevelBusinessTransactionCustomerBrokerSaleConstants.
+                        CUSTOMER_BROKER_SALE_TIMESTAMP_COLUMN_NAME),
+                record.getStringValue(UserLevelBusinessTransactionCustomerBrokerSaleConstants.
+                        CUSTOMER_BROKER_SALE_PURCHASE_STATUS_COLUMN_NAME),
+                record.getStringValue(UserLevelBusinessTransactionCustomerBrokerSaleConstants.
+                        CUSTOMER_BROKER_SALE_CONTRACT_STATUS_COLUMN_NAME),
+                TransactionStatus.getByCode(record.getStringValue(UserLevelBusinessTransactionCustomerBrokerSaleConstants.
+                        CUSTOMER_BROKER_SALE_TRANSACTION_STATUS_COLUMN_NAME)),
+                record.getStringValue(UserLevelBusinessTransactionCustomerBrokerSaleConstants.
+                        CUSTOMER_BROKER_SALE_CURRENCY_TYPE_COLUMN_NAME),
+                record.getStringValue(UserLevelBusinessTransactionCustomerBrokerSaleConstants.
+                        CUSTOMER_BROKER_SALE_TRANSACTION_TYPE_COLUMN_NAME),
+                record.getStringValue(UserLevelBusinessTransactionCustomerBrokerSaleConstants.
+                        CUSTOMER_BROKER_SALE_MEMO_COLUMN_NAME));
     }
 
     private DatabaseTableRecord getCustomerBrokerSaleRecord(CustomerBrokerSale customerBrokerSale

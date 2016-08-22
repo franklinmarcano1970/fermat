@@ -2,9 +2,12 @@ package com.bitdubai.fermat_ccp_plugin.layer.identity.intra_user.developer.bitdu
 
 import com.bitdubai.fermat_api.FermatException;
 import com.bitdubai.fermat_api.layer.all_definition.enums.DeviceDirectory;
+import com.bitdubai.fermat_api.layer.all_definition.exceptions.InvalidParameterException;
+import com.bitdubai.fermat_api.layer.all_definition.location_system.DeviceLocation;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.Database;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.DatabaseFilterType;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.DatabaseTable;
+import com.bitdubai.fermat_api.layer.osa_android.database_system.DatabaseTableFilter;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.DatabaseTableRecord;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.DealsWithPluginDatabaseSystem;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.PluginDatabaseSystem;
@@ -14,6 +17,7 @@ import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.Cant
 import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.CantOpenDatabaseException;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.CantUpdateRecordException;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.DatabaseNotFoundException;
+import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.DatabaseRecordExistException;
 import com.bitdubai.fermat_api.layer.osa_android.file_system.FileLifeSpan;
 import com.bitdubai.fermat_api.layer.osa_android.file_system.FilePrivacy;
 import com.bitdubai.fermat_api.layer.osa_android.file_system.PluginBinaryFile;
@@ -23,6 +27,9 @@ import com.bitdubai.fermat_api.layer.osa_android.file_system.exceptions.CantCrea
 import com.bitdubai.fermat_api.layer.osa_android.file_system.exceptions.CantLoadFileException;
 import com.bitdubai.fermat_api.layer.osa_android.file_system.exceptions.CantPersistFileException;
 import com.bitdubai.fermat_api.layer.osa_android.file_system.exceptions.FileNotFoundException;
+import com.bitdubai.fermat_api.layer.osa_android.location_system.Location;
+import com.bitdubai.fermat_api.layer.osa_android.location_system.LocationSource;
+import com.bitdubai.fermat_ccp_api.all_definition.enums.Frequency;
 import com.bitdubai.fermat_ccp_api.layer.actor.intra_user.exceptions.CantCreateNewDeveloperException;
 import com.bitdubai.fermat_ccp_api.layer.actor.intra_user.exceptions.CantGetUserDeveloperIdentitiesException;
 import com.bitdubai.fermat_ccp_api.layer.identity.intra_user.interfaces.IntraWalletUserIdentity;
@@ -37,6 +44,7 @@ import com.bitdubai.fermat_ccp_plugin.layer.identity.intra_user.developer.bitdub
 import com.bitdubai.fermat_pip_api.layer.user.device_user.interfaces.DeviceUser;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -128,25 +136,34 @@ public class IntraWalletUserIdentityDao implements DealsWithPluginDatabaseSystem
      * @param profileImage
      * @throws CantCreateNewDeveloperException
      */
-    public void createNewUser (String alias, String phrase,String publicKey,String privateKey, DeviceUser deviceUser,byte[] profileImage) throws CantCreateNewDeveloperException {
-
+    public void createNewUser (String alias, String phrase,String publicKey,String privateKey, DeviceUser deviceUser,byte[] profileImage, Long accuracy, Frequency frequency, Location location) throws CantCreateNewDeveloperException {
         try {
-            if (aliasExists (alias)) {
-                throw new CantCreateNewDeveloperException("Cant create new Intra User, alias exists.", "Intra User Identity", "Cant create new Intra User, alias exists.");
-            }
-
-            persistNewUserPrivateKeysFile(publicKey, privateKey);
-
             DatabaseTable table = this.database.getTable(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_TABLE_NAME);
             DatabaseTableRecord record = table.getEmptyRecord();
+
+            double lat = 0;
+            double lng = 0;
+
+            if(location != null){
+                lat = location.getLatitude();
+                lng = location.getLongitude();
+            }
 
             record.setStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_PUBLIC_KEY_COLUMN_NAME, publicKey);
             record.setStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_ALIAS_COLUMN_NAME, alias);
             record.setStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_PHRASE_COLUMN_NAME, phrase);
             record.setStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_DEVICE_USER_PUBLIC_KEY_COLUMN_NAME, deviceUser.getPublicKey());
             record.setStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_ACTIVE_COLUMN_NAME, "true");
+            record.setStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_ACCURACY_COLUMN, String.valueOf(accuracy));
+            record.setStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_FRECUENCY_COLUMN, frequency.getCode());
+            record.setDoubleValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_LAT_COLUMN, lat);
+            record.setDoubleValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_LONG_COLUMN, lng);
 
-            table.insertRecord(record);
+            List<DatabaseTableFilter> filters = new ArrayList<>();
+            filters.add(table.buildFilter(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_ALIAS_COLUMN_NAME, alias, DatabaseFilterType.EQUAL));
+            table.insertRecordIfNotExist(record,filters,null);
+
+            persistNewUserPrivateKeysFile(publicKey, privateKey);
 
             if(profileImage!=null)
             persistNewUserProfileImage(publicKey, profileImage);
@@ -155,10 +172,11 @@ public class IntraWalletUserIdentityDao implements DealsWithPluginDatabaseSystem
             // Cant insert record.
             throw new CantCreateNewDeveloperException (e.getMessage(), e, "Intra User Identity", "Cant create new Intra User, insert database problems.");
 
-        } catch (CantPersistPrivateKeyException e){
+        } catch (CantPersistPrivateKeyException e) {
             // Cant insert record.
-            throw new CantCreateNewDeveloperException (e.getMessage(), e, "Intra User Identity", "Cant create new Intra User,persist private key error.");
-
+            throw new CantCreateNewDeveloperException(e.getMessage(), e, "Intra User Identity", "Cant create new Intra User,persist private key error.");
+        }catch (DatabaseRecordExistException e){
+            throw new CantCreateNewDeveloperException(e.getMessage(), e, "Intra User Identity", "Cant create new Intra User, alias exist.");
         } catch (Exception e) {
             // Failure unknown.
             throw new CantCreateNewDeveloperException (e.getMessage(), FermatException.wrapException(e), "Intra User Identity", "Cant create new Intra User, unknown failure.");
@@ -166,7 +184,7 @@ public class IntraWalletUserIdentityDao implements DealsWithPluginDatabaseSystem
     }
 
 
-    public void updateIdentity (String publicKey,String alias,String phrase, byte[] profileImage) throws CantUpdateIntraUserIdentityException {
+    public void updateIdentity (String publicKey,String alias,String phrase, byte[] profileImage, Long accuracy, Frequency frequency, Location location) throws CantUpdateIntraUserIdentityException {
 
         try {
 
@@ -183,19 +201,31 @@ public class IntraWalletUserIdentityDao implements DealsWithPluginDatabaseSystem
             }
 
 
-            // 2) Find the Intra users.
+            // 2) Set update filter
             table.addStringFilter(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_PUBLIC_KEY_COLUMN_NAME, publicKey, DatabaseFilterType.EQUAL);
-            table.loadToMemory();
 
-            // 3) Get Intra users.
-            for (DatabaseTableRecord record : table.getRecords ()) {
+            // 3) Get a record to set data
+           DatabaseTableRecord record =  table.getEmptyRecord();
+
+                double lat = 0;
+                double lng = 0;
+
+                if(location != null){
+                    lat = location.getLatitude();
+                    lng = location.getLongitude();
+                }
 
                 //set new values
                 record.setStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_ALIAS_COLUMN_NAME, alias);
                 record.setStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_PHRASE_COLUMN_NAME, phrase);
+                record.setStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_ACCURACY_COLUMN, String.valueOf(accuracy));
+                record.setStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_FRECUENCY_COLUMN, frequency.getCode());
+                record.setDoubleValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_LAT_COLUMN, lat);
+                record.setDoubleValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_LONG_COLUMN, lng);
 
+            //update data
                 table.updateRecord(record);
-            }
+
 
             if(profileImage!=null)
                 persistNewUserProfileImage(publicKey, profileImage);
@@ -231,22 +261,16 @@ public class IntraWalletUserIdentityDao implements DealsWithPluginDatabaseSystem
                 throw new CantGetUserDeveloperIdentitiesException ("Cant get intra user identity list, table not found.", "Intra User Identity", "Cant get Intra User identity list, table not found.");
             }
 
-
-            // 2) Find the Intra users.
+            // 2) Set filter to delete.
             table.addStringFilter(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_PUBLIC_KEY_COLUMN_NAME, publicKey, DatabaseFilterType.EQUAL);
-            table.loadToMemory();
 
 
-            // 3) Get Intra users.
-            for (DatabaseTableRecord record : table.getRecords ()) {
+            // 3) Get a record to set data
+            DatabaseTableRecord record =  table.getEmptyRecord();
 
                 //set new values
-                record.setStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_ACTIVE_COLUMN_NAME, "false");
-
-
-                table.updateRecord(record);
-            }
-
+            record.setStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_ACTIVE_COLUMN_NAME, "false");
+             table.updateRecord(record);
 
 
         } catch (CantUpdateRecordException e){
@@ -312,11 +336,31 @@ public class IntraWalletUserIdentityDao implements DealsWithPluginDatabaseSystem
     }
 
     private com.bitdubai.fermat_ccp_api.layer.identity.intra_user.structure.IntraWalletUserIdentity buildIdentity(DatabaseTableRecord record) throws CantGetIntraWalletUserIdentityPrivateKeyException, CantGetIntraWalletUserIdentityProfileImageException {
+
+        Frequency frequency = Frequency.NORMAL;
+
+        try{
+            frequency = Frequency.getByCode(record.getStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_FRECUENCY_COLUMN));
+        }
+        catch(InvalidParameterException e)
+        {
+
+        }
+
+        Location location = new DeviceLocation(record.getDoubleValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_LAT_COLUMN),
+                                                record.getDoubleValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_LONG_COLUMN),
+                                                System.currentTimeMillis(),Double.parseDouble("0"),
+                                                LocationSource.GPS);
+
         return new com.bitdubai.fermat_ccp_api.layer.identity.intra_user.structure.IntraWalletUserIdentity(record.getStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_ALIAS_COLUMN_NAME),
                 record.getStringValue (IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_PHRASE_COLUMN_NAME),
                 record.getStringValue (IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_PUBLIC_KEY_COLUMN_NAME),
                 getIntraUserIdentityPrivateKey(record.getStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_PUBLIC_KEY_COLUMN_NAME)),
-                getIntraUserProfileImagePrivateKey(record.getStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_PUBLIC_KEY_COLUMN_NAME)));
+                getIntraUserProfileImagePrivateKey(record.getStringValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_PUBLIC_KEY_COLUMN_NAME)),
+                record.getLongValue(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_ACCURACY_COLUMN), frequency,
+                location);
+
+
     }
 
 
@@ -468,13 +512,14 @@ public class IntraWalletUserIdentityDao implements DealsWithPluginDatabaseSystem
             }
 
             table.addStringFilter(IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_ALIAS_COLUMN_NAME, alias, DatabaseFilterType.EQUAL);
-            table.loadToMemory();
+            long numRecords = table.numRecords();
+//            table.loadToMemory();
 
-            return table.getRecords ().size () > 0;
+            return numRecords>0; //table.getRecords ().size () > 0;
 
 
-        } catch (CantLoadTableToMemoryException em) {
-            throw new CantCreateNewDeveloperException (em.getMessage(), em, "Intra User Identity", "Cant load " + IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_TABLE_NAME + " table in memory.");
+//        } catch (CantLoadTableToMemoryException em) {
+//            throw new CantCreateNewDeveloperException (em.getMessage(), em, "Intra User Identity", "Cant load " + IntraWalletUserIdentityDatabaseConstants.INTRA_WALLET_USER_TABLE_NAME + " table in memory.");
 
         } catch (Exception e) {
             throw new CantCreateNewDeveloperException (e.getMessage(), FermatException.wrapException(e), "Intra User Identity", "unknown failure.");

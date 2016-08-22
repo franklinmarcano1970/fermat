@@ -2,13 +2,16 @@ package com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.incoming_extra_a
 
 import com.bitdubai.fermat_api.layer.all_definition.enums.Actors;
 import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
+import com.bitdubai.fermat_api.layer.all_definition.enums.CryptoCurrency;
 import com.bitdubai.fermat_api.layer.all_definition.money.CryptoAddress;
+import com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.FeeOrigin;
 import com.bitdubai.fermat_ccp_api.layer.basic_wallet.loss_protected_wallet.interfaces.BitcoinLossProtectedWalletTransactionRecord;
 
 import java.util.UUID;
 
 /**
  * Created by natalia on 18/03/16.
+ * updated by Andres Abreu aabreu1 2016.08.01..
  */
 public class LossProtectedTransactionWrapper implements BitcoinLossProtectedWalletTransactionRecord  {
 
@@ -35,6 +38,14 @@ private long amount;
 private long timestamp;
 
 private String memo;
+
+FeeOrigin FeeOrigin;
+
+    long Fee;
+
+    long Total;
+
+    private CryptoCurrency cryptoCurrency;
 
 private BlockchainNetworkType blockchainNetworkType;
 
@@ -110,6 +121,15 @@ private BlockchainNetworkType blockchainNetworkType;
         @Override
         public BlockchainNetworkType getBlockchainNetworkType() {return blockchainNetworkType;}
 
+    public void setCryptoCurrency(CryptoCurrency cryptoCurrency) {
+        this.cryptoCurrency = cryptoCurrency;
+    }
+
+    @Override
+    public CryptoCurrency getCryptoCurrency() {
+        return this.cryptoCurrency;
+    }
+
     @Override
     public long getExchangRate() {
         return 0;
@@ -148,4 +168,32 @@ private BlockchainNetworkType blockchainNetworkType;
         public void setTransactionHash(String tramsactionHash) {
             this.transactionHash = tramsactionHash;
         }
+
+    @Override
+    public FeeOrigin getFeeOrigin() {
+        if (FeeOrigin == null)
+            return com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT;
+        else
+            return FeeOrigin;
+    }
+    public void setFeeOrigin(FeeOrigin feeOrigin){
+        this.FeeOrigin = feeOrigin;
+    }
+
+    @Override
+    public long getFee() {
+        return Fee;
+    }
+    public void setFee(long fee){
+        this.Fee = fee;
+    }
+
+    @Override
+    public long getTotal() {
+        return Total;
+    }
+    public void setTotal(long total){
+        this.Total = total;
+    }
+
 }

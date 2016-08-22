@@ -4,12 +4,13 @@ import com.bitdubai.fermat_cbp_api.all_definition.contract.ContractClause;
 import com.bitdubai.fermat_cbp_api.all_definition.enums.ContractStatus;
 import com.bitdubai.fermat_cbp_api.layer.contract.customer_broker_sale.interfaces.CustomerBrokerContractSale;
 
+import java.io.Serializable;
 import java.util.Collection;
 
 /**
  * Created by Yordin Alayn on 30.03.16.
  */
-public class ContractSaleRecord implements CustomerBrokerContractSale {
+public class ContractSaleRecord implements CustomerBrokerContractSale, Serializable {
 
     private static final int HASH_PRIME_NUMBER_PRODUCT = 1117;
     private static final int HASH_PRIME_NUMBER_ADD = 3001;
@@ -24,22 +25,40 @@ public class ContractSaleRecord implements CustomerBrokerContractSale {
     private Boolean nearExpirationDatetime;
     private String cancelReason;
 
-    public String getContractId() { return this.contractID; }
+    public String getContractId() {
+        return this.contractID;
+    }
 
-    public String getNegotiatiotId() { return this.negotiationID; }
+    public String getNegotiatiotId() {
+        return this.negotiationID;
+    }
 
-    public String getPublicKeyCustomer() { return this.publicKeyCustomer; }
+    public String getPublicKeyCustomer() {
+        return this.publicKeyCustomer;
+    }
 
-    public String getPublicKeyBroker() { return this.publicKeyBroker; }
+    public String getPublicKeyBroker() {
+        return this.publicKeyBroker;
+    }
 
-    public Long getDateTime() { return this.dateTime; }
+    public Long getDateTime() {
+        return this.dateTime;
+    }
 
-    public ContractStatus getStatus() { return this.status; }
+    public ContractStatus getStatus() {
+        return this.status;
+    }
 
-    public Collection<ContractClause> getContractClause() { return clause; }
+    public Collection<ContractClause> getContractClause() {
+        return clause;
+    }
 
-    public Boolean getNearExpirationDatetime() { return this.nearExpirationDatetime; }
+    public Boolean getNearExpirationDatetime() {
+        return this.nearExpirationDatetime;
+    }
 
-    public String getCancelReason() { return this.cancelReason; }
+    public String getCancelReason() {
+        return this.cancelReason;
+    }
 
 }

@@ -10,7 +10,6 @@ import com.bitdubai.fermat_cbp_api.layer.wallet_module.common.interfaces.Custome
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Objects;
 import java.util.UUID;
 
 
@@ -196,11 +195,20 @@ public class CustomerBrokerSaleNegotiationImpl implements CustomerBrokerSaleNego
 
     public void changeInfo(CustomerBrokerNegotiationInformation negotiationInfo) {
 
-        dataHasChanged = dataHasChanged || !Objects.equals(cancelReason, negotiationInfo.getCancelReason());
-        cancelReason = negotiationInfo.getCancelReason();
+        final String changedCancelReason = negotiationInfo.getCancelReason();
 
-        dataHasChanged = dataHasChanged || !Objects.equals(memo, negotiationInfo.getMemo());
-        memo = negotiationInfo.getMemo();
+        dataHasChanged = (cancelReason != null && changedCancelReason != null) && (dataHasChanged || !changedCancelReason.equals(cancelReason));
+        dataHasChanged = dataHasChanged || (cancelReason == null && changedCancelReason != null);
+        dataHasChanged = dataHasChanged || (cancelReason != null && changedCancelReason == null);
+        cancelReason = changedCancelReason;
+
+
+        final String changedMemo = negotiationInfo.getMemo();
+        dataHasChanged = (memo != null && changedMemo != null) && (dataHasChanged || !changedMemo.equals(this.memo));
+        dataHasChanged = dataHasChanged || (memo == null && changedMemo != null);
+        dataHasChanged = dataHasChanged || (memo != null && changedMemo == null);
+        this.memo = changedMemo;
+
 
         Collection<ClauseInformation> values = negotiationInfo.getClauses().values();
         dataHasChanged = dataHasChanged || (clauses.size() != values.size());
@@ -211,7 +219,7 @@ public class CustomerBrokerSaleNegotiationImpl implements CustomerBrokerSaleNego
             clauses.add(new ClauseImpl(value, brokerPublicKey));
         }
 
-        this.status = NegotiationStatus.SENT_TO_CUSTOMER;
+        this.status = dataHasChanged ? NegotiationStatus.SENT_TO_CUSTOMER : NegotiationStatus.WAITING_FOR_CLOSING;
     }
 
     public boolean dataHasChanged() {

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Preference_Category">Preference_Category
+        <item name="android:color">@color/color_black</item>
+        <item name="android:background">@color/color_gray_light</item>
+    </style>
+
+    <style name="menu_labels_style">
+        <item name="android:background">#959bf1</item>
+        <item name="android:textColor">#fff</item>
+    </style>
+
+
+
+    <!-- for text -->
+    <style name="AppTabTextAppearance" parent="TextAppearance.Design.Tab">
+        <item name="android:textSize">16sp</item>
+        <item name="textAllCaps">false</item>
+    </style>
+
+
+
+</resources>

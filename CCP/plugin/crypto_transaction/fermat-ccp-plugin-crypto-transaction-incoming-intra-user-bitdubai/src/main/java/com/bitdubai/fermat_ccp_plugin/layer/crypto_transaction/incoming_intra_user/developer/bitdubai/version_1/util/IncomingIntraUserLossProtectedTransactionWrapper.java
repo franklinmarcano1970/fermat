@@ -2,13 +2,16 @@ package com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.incoming_intra_u
 
 import com.bitdubai.fermat_api.layer.all_definition.enums.Actors;
 import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
+import com.bitdubai.fermat_api.layer.all_definition.enums.CryptoCurrency;
 import com.bitdubai.fermat_api.layer.all_definition.money.CryptoAddress;
+import com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.FeeOrigin;
 import com.bitdubai.fermat_ccp_api.layer.basic_wallet.loss_protected_wallet.interfaces.BitcoinLossProtectedWalletTransactionRecord;
 
 import java.util.UUID;
 
 /**
  * Created by natalia on 18/03/16.
+ * updated by Andres Abreu aabreu1 2016.08.01..
  */
 public class IncomingIntraUserLossProtectedTransactionWrapper implements BitcoinLossProtectedWalletTransactionRecord {
 
@@ -26,6 +29,11 @@ public class IncomingIntraUserLossProtectedTransactionWrapper implements Bitcoin
     private final String        memo              ;
     private final BlockchainNetworkType blockchainNetworkType;
     private long exchangeRate;
+    private FeeOrigin FeeOrigin;
+    private long Fee;
+    private long Total;
+    private CryptoCurrency cryptoCurrency;
+
 
     public IncomingIntraUserLossProtectedTransactionWrapper(final UUID        transactionId     ,
                                                final UUID          requestId     ,
@@ -39,7 +47,11 @@ public class IncomingIntraUserLossProtectedTransactionWrapper implements Bitcoin
                                                final long          amount            ,
                                                final long          timestamp         ,
                                                final String        memo              ,
-                                               final BlockchainNetworkType blockchainNetworkType) {
+                                               final BlockchainNetworkType blockchainNetworkType,
+                                                            final FeeOrigin feeOrigin,
+                                                            final long fee,
+                                                            final long total,
+                                                            final CryptoCurrency cryptoCurrency) {
 
         this.transactionId      = transactionId     ;
         this.requestId          = requestId         ;
@@ -54,6 +66,10 @@ public class IncomingIntraUserLossProtectedTransactionWrapper implements Bitcoin
         this.timestamp          = timestamp         ;
         this.memo               = memo              ;
         this.blockchainNetworkType = blockchainNetworkType;
+        this.cryptoCurrency = cryptoCurrency;
+        this.Fee = fee;
+        this.FeeOrigin = feeOrigin;
+        this.Total = total;
     }
 
     @Override
@@ -124,6 +140,29 @@ public class IncomingIntraUserLossProtectedTransactionWrapper implements Bitcoin
     @Override
     public long getExchangRate() {
         return 0;
+    }
+
+    @Override
+    public CryptoCurrency getCryptoCurrency() {
+        return cryptoCurrency;
+    }
+
+    @Override
+    public FeeOrigin getFeeOrigin() {
+        if (FeeOrigin == null)
+            return com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT;
+        else
+            return FeeOrigin;
+    }
+
+    @Override
+    public long getFee() {
+        return Fee;
+    }
+
+    @Override
+    public long getTotal() {
+        return Total;
     }
 
 

@@ -1,16 +1,20 @@
-/*
- * @#JaxRsActivator.java - 2015
- * Copyright bitDubai.com., All rights reserved.
- * You may not modify, use, reproduce or distribute this software.
- * BITDUBAI/CONFIDENTIAL
- */
 package com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest;
 
-import java.util.LinkedHashSet;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest.services.Actors;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest.services.AvailableNodes;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest.services.ConfigurationService;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest.services.DeveloperDatabaseResource;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest.services.HelloResource;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest.services.Monitoring;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest.services.NetworkData;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest.services.Nodes;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest.services.OnlineComponents;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest.services.Profiles;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest.services.UserAuth;
+import com.google.common.collect.ImmutableSet;
+
 import java.util.Set;
 
-import javax.enterprise.inject.Instance;
-import javax.inject.Inject;
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
 
@@ -25,7 +29,7 @@ import javax.ws.rs.core.Application;
 @ApplicationPath("/rest/api/v1")
 public class JaxRsActivator extends Application {
 
-    @Inject
+   /* @Inject
     private Instance<RestFulServices> services;
 
     @Override
@@ -38,6 +42,25 @@ public class JaxRsActivator extends Application {
         }
 
         return resourceList;
+    } */
+
+    private static final ImmutableSet services = ImmutableSet.of(
+            AvailableNodes.class,
+            HelloResource.class,
+            OnlineComponents.class,
+            Profiles.class,
+            Nodes.class,
+            NetworkData.class,
+            Monitoring.class,
+            UserAuth.class,
+            ConfigurationService.class,
+            com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.rest.services.Databases.class,
+            Actors.class
+    );
+
+    @Override
+    public Set<Class<?>> getClasses() {
+        return services;
     }
 
 }

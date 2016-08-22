@@ -48,6 +48,7 @@ import com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer
 import com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer.bitdubai.version_1.structure.MatchingEngineMiddlewareEarningsPair;
 import com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer.bitdubai.version_1.structure.MatchingEngineMiddlewareInputTransaction;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -97,7 +98,7 @@ import static com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.de
  * @author lnacosta
  * @version 1.0
  */
-public class MatchingEngineMiddlewareDao {
+public class MatchingEngineMiddlewareDao implements Serializable {
 
     private final PluginDatabaseSystem pluginDatabaseSystem;
     private final UUID pluginId;
@@ -249,7 +250,6 @@ public class MatchingEngineMiddlewareDao {
                     earningWalletReference,
                     state,
 
-                    this,
                     walletReference
             );
 
@@ -484,7 +484,6 @@ public class MatchingEngineMiddlewareDao {
                 earningsWalletReference,
                 state,
 
-                this,
                 walletReference
         );
     }
@@ -836,7 +835,7 @@ public class MatchingEngineMiddlewareDao {
                 earningsTransactionTable.setFilterTop(max.toString());
             if (offset != null)
                 earningsTransactionTable.setFilterOffSet(offset.toString());
-            if(state != null)
+            if (state != null)
                 earningsTransactionTable.addFermatEnumFilter(EARNING_TRANSACTION_STATE_COLUMN_NAME, state, DatabaseFilterType.EQUAL);
 
             earningsTransactionTable.addUUIDFilter(EARNING_TRANSACTION_EARNING_PAIR_ID_COLUMN_NAME, earningsPairId, DatabaseFilterType.EQUAL);

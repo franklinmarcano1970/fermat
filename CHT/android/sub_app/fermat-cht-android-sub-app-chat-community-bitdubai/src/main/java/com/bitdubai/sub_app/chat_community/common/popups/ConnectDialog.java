@@ -1,28 +1,29 @@
 package com.bitdubai.sub_app.chat_community.common.popups;
 
 import android.annotation.SuppressLint;
-import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.view.Window;
 import android.widget.Toast;
 
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.layer.definition.wallet.views.FermatButton;
 import com.bitdubai.fermat_android_api.layer.definition.wallet.views.FermatTextView;
 import com.bitdubai.fermat_android_api.ui.dialogs.FermatDialog;
 import com.bitdubai.fermat_api.layer.actor_connection.common.exceptions.ConnectionAlreadyRequestedException;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedUIExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.enums.UISource;
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.chat_actor_community.exceptions.ActorChatConnectionAlreadyRequestesException;
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.chat_actor_community.exceptions.ActorChatTypeNotSupportedException;
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.chat_actor_community.exceptions.CantRequestActorConnectionException;
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.chat_actor_community.interfaces.ChatActorCommunityInformation;
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.chat_actor_community.interfaces.ChatActorCommunitySelectableIdentity;
+import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.chat_actor_community.interfaces.ChatActorCommunitySubAppModuleManager;
 import com.bitdubai.fermat_pip_api.layer.network_service.subapp_resources.SubAppResourcesProviderManager;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedUIExceptionSeverity;
-import com.bitdubai.sub_app.chat_community.constants.Constants;
-import com.bitdubai.sub_app.chat_community.session.ChatUserSubAppSession;
 import com.bitdubai.sub_app.chat_community.R;
+import com.bitdubai.sub_app.chat_community.constants.Constants;
 
 /**
  * ConnectDialog
@@ -31,7 +32,9 @@ import com.bitdubai.sub_app.chat_community.R;
  * @version 1.0
  */
 @SuppressWarnings("FieldCanBeLocal")
-public class ConnectDialog extends FermatDialog<ChatUserSubAppSession, SubAppResourcesProviderManager> implements View.OnClickListener {
+public class ConnectDialog
+        extends FermatDialog<ReferenceAppFermatSession<ChatActorCommunitySubAppModuleManager>, SubAppResourcesProviderManager>
+        implements View.OnClickListener {
 
     /**
      * UI components
@@ -50,10 +53,10 @@ public class ConnectDialog extends FermatDialog<ChatUserSubAppSession, SubAppRes
 
     private final ChatActorCommunityInformation chatUserInformation;
     private final ChatActorCommunitySelectableIdentity identity;
+    private Context activity;
 
-
-    public ConnectDialog(final Activity a,
-                         final ChatUserSubAppSession chatUserSubAppSession,
+    public ConnectDialog(final Context a,
+                         final ReferenceAppFermatSession<ChatActorCommunitySubAppModuleManager> chatUserSubAppSession,
                          final SubAppResourcesProviderManager subAppResources,
                          final ChatActorCommunityInformation chatUserInformation,
                          final ChatActorCommunitySelectableIdentity identity) {
@@ -62,6 +65,7 @@ public class ConnectDialog extends FermatDialog<ChatUserSubAppSession, SubAppRes
 
         this.chatUserInformation = chatUserInformation;
         this.identity = identity;
+        this.activity = a;
     }
 
 
@@ -72,16 +76,16 @@ public class ConnectDialog extends FermatDialog<ChatUserSubAppSession, SubAppRes
 
         mDescription = (FermatTextView) findViewById(R.id.description);
         mUsername = (FermatTextView) findViewById(R.id.user_name);
-        mSecondDescription = (FermatTextView) findViewById(R.id.second_description);
+//        mSecondDescription = (FermatTextView) findViewById(R.id.second_description);
         mTitle = (FermatTextView) findViewById(R.id.title);
         positiveBtn = (FermatButton) findViewById(R.id.positive_button);
         negativeBtn = (FermatButton) findViewById(R.id.negative_button);
-        mSecondDescription.setVisibility(View.VISIBLE);
+//        mSecondDescription.setVisibility(View.GONE);
         positiveBtn.setOnClickListener(this);
         negativeBtn.setOnClickListener(this);
-        mSecondDescription.setText(secondDescription != null ? secondDescription : "");
+//        mSecondDescription.setText(secondDescription != null ? secondDescription : "");
         mDescription.setText(description != null ? description : "");
-        mUsername.setText(username != null ? username : "");
+//        mUsername.setText(username != null ? username : "");
         mTitle.setText(title != null ? title : "");
     }
 
@@ -121,12 +125,12 @@ public class ConnectDialog extends FermatDialog<ChatUserSubAppSession, SubAppRes
                 if (chatUserInformation != null && identity != null) {
                     getSession().getModuleManager()
                             .requestConnectionToChatActor(identity, chatUserInformation);
-//                            .askIntraUserForAcceptance(chatUserInformation.getName(),
-
                     Intent broadcast = new Intent(Constants.LOCAL_BROADCAST_CHANNEL);
                     broadcast.putExtra(Constants.BROADCAST_CONNECTED_UPDATE, true);
                     sendLocalBroadcast(broadcast);
-                    Toast.makeText(getContext(), "Connection request sent", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getContext(),
+                            activity.getResources().getString(R.string.cht_comm_text_connect_toast),
+                            Toast.LENGTH_SHORT).show();
                 } else {
                     super.toastDefaultError();
                 }
@@ -134,7 +138,7 @@ public class ConnectDialog extends FermatDialog<ChatUserSubAppSession, SubAppRes
             } catch (CantRequestActorConnectionException
                     | ActorChatTypeNotSupportedException
                     | ActorChatConnectionAlreadyRequestesException
-                    |ConnectionAlreadyRequestedException e) {
+                    | ConnectionAlreadyRequestedException e) {
                 getErrorManager().reportUnexpectedUIException(UISource.VIEW, UnexpectedUIExceptionSeverity.UNSTABLE, e);
                 super.toastDefaultError();
             }

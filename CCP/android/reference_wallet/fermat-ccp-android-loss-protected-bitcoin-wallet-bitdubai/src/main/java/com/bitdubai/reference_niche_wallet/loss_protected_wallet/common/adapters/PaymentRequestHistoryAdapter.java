@@ -1,17 +1,20 @@
 package com.bitdubai.reference_niche_wallet.loss_protected_wallet.common.adapters;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Typeface;
 import android.view.View;
 import android.widget.Toast;
 
 import com.bitdubai.android_fermat_ccp_loss_protected_wallet_bitcoin.R;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.layer.definition.wallet.utils.ImagesUtils;
 import com.bitdubai.fermat_android_api.ui.adapters.FermatAdapter;
-
 import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
-
-import com.bitdubai.fermat_api.layer.all_definition.settings.structure.SettingsManager;
+import com.bitdubai.fermat_api.layer.all_definition.settings.exceptions.CantGetSettingsException;
+import com.bitdubai.fermat_api.layer.all_definition.settings.exceptions.CantPersistSettingsException;
+import com.bitdubai.fermat_api.layer.all_definition.settings.exceptions.SettingsNotFoundException;
+import com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.BitcoinFee;
 import com.bitdubai.fermat_ccp_api.layer.basic_wallet.common.enums.BalanceType;
 import com.bitdubai.fermat_ccp_api.layer.request.crypto_payment.enums.CryptoPaymentState;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.LossProtectedWalletSettings;
@@ -20,15 +23,15 @@ import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.int
 import com.bitdubai.reference_niche_wallet.loss_protected_wallet.common.enums.ShowMoneyType;
 import com.bitdubai.reference_niche_wallet.loss_protected_wallet.common.holders.PaymentHistoryItemViewHolder;
 import com.bitdubai.reference_niche_wallet.loss_protected_wallet.common.popup.Confirm_Send_Payment_Dialog;
-
+import com.bitdubai.reference_niche_wallet.loss_protected_wallet.common.utils.WalletUtils;
 import com.bitdubai.reference_niche_wallet.loss_protected_wallet.common.utils.onRefreshList;
-import com.bitdubai.reference_niche_wallet.loss_protected_wallet.session.LossProtectedWalletSession;
+import com.bitdubai.reference_niche_wallet.loss_protected_wallet.session.SessionConstant;
+
 
 import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Locale;
 
-import static com.bitdubai.reference_niche_wallet.loss_protected_wallet.common.utils.WalletUtils.formatBalanceString;
 import static com.bitdubai.reference_niche_wallet.loss_protected_wallet.common.utils.WalletUtils.showMessage;
 
 /**
@@ -39,24 +42,48 @@ public class PaymentRequestHistoryAdapter  extends FermatAdapter<LossProtectedPa
     private onRefreshList onRefreshList;
 
     LossProtectedWallet lossProtectedWallet;
-    LossProtectedWalletSession appSession;
+    LossProtectedWalletSettings lossProtectedWalletSettings;
+    ReferenceAppFermatSession<LossProtectedWallet> appSession;
     Typeface tf;
 
     boolean lossProtectedEnabled;
     BlockchainNetworkType blockchainNetworkType;
-    SettingsManager<LossProtectedWalletSettings> settingsManager;
+    private String feeLevel = "NORMAL";
 
 
     protected PaymentRequestHistoryAdapter(Context context) {
         super(context);
     }
 
-    public PaymentRequestHistoryAdapter(Context context, List<LossProtectedPaymentRequest> dataSet, LossProtectedWallet cryptoWallet, LossProtectedWalletSession referenceWalletSession,onRefreshList onRefresh) {
+    public PaymentRequestHistoryAdapter(Context context, List<LossProtectedPaymentRequest> dataSet, LossProtectedWallet cryptoWallet, ReferenceAppFermatSession<LossProtectedWallet> referenceWalletSession,onRefreshList onRefresh) {
         super(context, dataSet);
         this.lossProtectedWallet = cryptoWallet;
         this.appSession =referenceWalletSession;
         this.onRefreshList = onRefresh;
         tf = Typeface.createFromAsset(context.getAssets(), "fonts/Roboto-Regular.ttf");
+
+        try {
+
+            if(appSession.getData(SessionConstant.BLOCKCHANIN_TYPE) != null)
+                blockchainNetworkType = (BlockchainNetworkType)appSession.getData(SessionConstant.BLOCKCHANIN_TYPE);
+            else
+                blockchainNetworkType = BlockchainNetworkType.getDefaultBlockchainNetworkType();
+
+            if(appSession.getData(SessionConstant.LOSS_PROTECTED_ENABLED) != null)
+                lossProtectedEnabled = (boolean)appSession.getData(SessionConstant.LOSS_PROTECTED_ENABLED);
+            else
+                lossProtectedEnabled = true;
+
+            if(appSession.getData(SessionConstant.FEE_LEVEL) != null)
+                feeLevel = (String)appSession.getData(SessionConstant.FEE_LEVEL);
+            else
+                feeLevel = "NORMAL";
+
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void setOnClickListerAcceptButton(View.OnClickListener onClickListener){
@@ -99,14 +126,30 @@ public class PaymentRequestHistoryAdapter  extends FermatAdapter<LossProtectedPa
     @Override
     protected void bindHolder(final PaymentHistoryItemViewHolder holder, final LossProtectedPaymentRequest data, int position) {
 
+        final int MAX_DECIMAL_FOR_BALANCE_TRANSACTION = 8;
+        final int MIN_DECIMAL_FOR_BALANCE_TRANSACTION = 2;
+
         try {
             holder.getContactIcon().setImageDrawable(ImagesUtils.getRoundedBitmap(context.getResources(), data.getContact().getProfilePicture()));
         }catch (Exception e){
             holder.getContactIcon().setImageDrawable(ImagesUtils.getRoundedBitmap(context.getResources(), R.drawable.ic_profile_male));
         }
 
-        holder.getTxt_amount().setText(formatBalanceString(data.getAmount(), ShowMoneyType.BITCOIN.getCode())+" BTC");
-        holder.getTxt_amount().setTypeface(tf) ;
+        try {
+            //set Amount transaction
+            holder.getTxt_amount().setText(
+                    WalletUtils.formatBalanceStringWithDecimalEntry(
+                            data.getAmount(),
+                            MAX_DECIMAL_FOR_BALANCE_TRANSACTION,
+                            MIN_DECIMAL_FOR_BALANCE_TRANSACTION,
+                            ShowMoneyType.BITCOIN.getCode())+ " BTC");
+
+            holder.getTxt_amount().setTypeface(tf) ;
+        }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+
 
         if(data.getContact() != null)
             holder.getTxt_contactName().setText(data.getContact().getActorName());
@@ -195,44 +238,58 @@ public class PaymentRequestHistoryAdapter  extends FermatAdapter<LossProtectedPa
                     try {
 
                         //verify loss protected settings
-                        //TODO:  esta verificacion de proteccion solo se valida si sabes que va a perder dinero
-                        settingsManager = appSession.getModuleManager().getSettingsManager();
-                        LossProtectedWalletSettings bitcoinWalletSettings = null;
-                        bitcoinWalletSettings = settingsManager.loadAndGetSettings(appSession.getAppPublicKey());
-
-                        blockchainNetworkType = bitcoinWalletSettings.getBlockchainNetworkType();
-
-                        lossProtectedWallet = appSession.getModuleManager().getCryptoWallet();
-
-                        lossProtectedEnabled = bitcoinWalletSettings.getLossProtectedEnabled();
-
-                        long availableBalance = lossProtectedWallet.getBalance(BalanceType.AVAILABLE, appSession.getAppPublicKey(), blockchainNetworkType, String.valueOf(appSession.getActualExchangeRate()));
+                        if(((double)appSession.getData(SessionConstant.ACTUAL_EXCHANGE_RATE)) != 0){
 
 
-                        if( data.getAmount() > availableBalance) //the amount is greater than the available
-                        {
-                            //check loss protected settings
-                            if (!lossProtectedEnabled) {
-                                //show dialog confirm
-                                Confirm_Send_Payment_Dialog confirm_send_dialog = new Confirm_Send_Payment_Dialog(context,
-                                        data.getAmount(),
-                                        data.getRequestId(), appSession,blockchainNetworkType,lossProtectedWallet);
-                                confirm_send_dialog.show();
+
+                            lossProtectedWallet = appSession.getModuleManager();
+
+
+
+
+                            long availableBalance = lossProtectedWallet.getBalance(BalanceType.AVAILABLE, appSession.getAppPublicKey(), blockchainNetworkType, String.valueOf(appSession.getData(SessionConstant.ACTUAL_EXCHANGE_RATE)));
+
+
+                            if( (data.getAmount() + BitcoinFee.valueOf(feeLevel).getFee()) > availableBalance) //the amount is greater than the available
+                            {
+                                //check loss protected settings
+                                if (!lossProtectedEnabled) {
+                                    //show dialog confirm
+                                    Confirm_Send_Payment_Dialog confirm_send_dialog = new Confirm_Send_Payment_Dialog(context,
+                                            data.getAmount(),
+                                            data.getRequestId(), appSession,blockchainNetworkType,lossProtectedWallet);
+                                    confirm_send_dialog.show();
+
+                                    confirm_send_dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
+
+                                        @Override
+                                        public void onDismiss(DialogInterface dialog) {
+                                            notifyDataSetChanged();
+                                            onRefreshList.onRefresh();
+                                        }
+                                    });
+                                }
+                                else
+                                {
+                                    Toast.makeText(context, "Action not allowed, You do not have enough funds", Toast.LENGTH_LONG).show();
+                                }
                             }
                             else
                             {
-                                Toast.makeText(context, "Action not allowed, You do not have enough funds", Toast.LENGTH_LONG).show();
+                                //aprove payment request
+                                lossProtectedWallet.approveRequest(data.getRequestId()
+                                        , lossProtectedWallet.getSelectedActorIdentity().getPublicKey());
+                                Toast.makeText(context, "Request accepted", Toast.LENGTH_SHORT).show();
+                                notifyDataSetChanged();
+                                onRefreshList.onRefresh();
                             }
                         }
                         else
                         {
-                            //aprove payment request
-                                lossProtectedWallet.approveRequest(data.getRequestId()
-                                        , appSession.getIntraUserModuleManager().getPublicKey());
-                                Toast.makeText(context, "Request accepted", Toast.LENGTH_SHORT).show();
-                                notifyDataSetChanged();
-                                onRefreshList.onRefresh();
+                            Toast.makeText(context, "Action not allowed.Could not retrieve the dollar exchange rate.\nCheck your internet connection.. ", Toast.LENGTH_LONG).show();
+
                         }
+
 
 
                     } catch (Exception e) {

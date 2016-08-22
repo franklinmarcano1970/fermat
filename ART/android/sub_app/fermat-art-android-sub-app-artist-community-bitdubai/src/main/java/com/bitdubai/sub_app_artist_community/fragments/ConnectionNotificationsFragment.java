@@ -3,10 +3,12 @@ package com.bitdubai.sub_app_artist_community.fragments;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,11 +18,13 @@ import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.bitdubai.fermat_android_api.layer.definition.wallet.AbstractFermatFragment;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.ui.interfaces.FermatListItemListeners;
 import com.bitdubai.fermat_android_api.ui.interfaces.FermatWorkerCallBack;
 import com.bitdubai.fermat_android_api.ui.util.FermatWorker;
 import com.bitdubai.fermat_api.layer.modules.exceptions.ActorIdentityNotSelectedException;
 import com.bitdubai.fermat_api.layer.modules.exceptions.CantGetSelectedActorIdentityException;
+import com.bitdubai.fermat_art_api.layer.sub_app_module.community.ArtCommunityInformation;
 import com.bitdubai.fermat_art_api.layer.sub_app_module.community.artist.exceptions.CantListArtistsException;
 import com.bitdubai.fermat_art_api.layer.sub_app_module.community.artist.interfaces.ArtistCommunityInformation;
 import com.bitdubai.fermat_art_api.layer.sub_app_module.community.artist.interfaces.ArtistCommunitySubAppModuleManager;
@@ -30,7 +34,7 @@ import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.Err
 import com.bitdubai.sub_app.artist_community.R;
 import com.bitdubai.sub_app_artist_community.adapters.AppNotificationAdapter;
 import com.bitdubai.sub_app_artist_community.commons.popups.AcceptDialog;
-import com.bitdubai.sub_app_artist_community.sessions.ArtistSubAppSession;
+import com.bitdubai.sub_app_artist_community.sessions.ArtistSubAppSessionReferenceApp;
 import com.bitdubai.sub_app_artist_community.util.CommonLogger;
 
 import java.util.ArrayList;
@@ -39,14 +43,14 @@ import java.util.List;
 /**
  * Created by Gabriel Araujo (gabe_512@hotmail.com) on 08/04/16.
  */
-public class ConnectionNotificationsFragment extends AbstractFermatFragment<ArtistSubAppSession, SubAppResourcesProviderManager>
+public class ConnectionNotificationsFragment extends AbstractFermatFragment<ReferenceAppFermatSession<ArtistCommunitySubAppModuleManager>, SubAppResourcesProviderManager>
         implements SwipeRefreshLayout.OnRefreshListener, FermatListItemListeners<ArtistCommunityInformation>, AcceptDialog.OnDismissListener {
 
     public static final String ACTOR_SELECTED = "actor_selected";
 
     private static final int MAX = 20;
 
-    protected final String TAG = "ConnectionNotificationsFragment";
+    protected final String TAG = "ArtistConnectionNotificationsFragment";
 
     private RecyclerView recyclerView;
     private LinearLayoutManager layoutManager;
@@ -58,7 +62,7 @@ public class ConnectionNotificationsFragment extends AbstractFermatFragment<Arti
     private ArtistCommunitySubAppModuleManager moduleManager;
     private ErrorManager errorManager;
     private int offset = 0;
-    private ArtistCommunityInformation artistCommunityInformation;
+    private ArtCommunityInformation artistCommunityInformation;
     private List<ArtistCommunityInformation> artistCommunityInformations;
 
     /**
@@ -73,9 +77,9 @@ public class ConnectionNotificationsFragment extends AbstractFermatFragment<Arti
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        setHasOptionsMenu(true);
         // setting up  module
-        artistCommunityInformation = (ArtistCommunityInformation) appSession.getData(ACTOR_SELECTED);
+        artistCommunityInformation = (ArtCommunityInformation) appSession.getData(ACTOR_SELECTED);
         moduleManager = appSession.getModuleManager();
         errorManager = appSession.getErrorManager();
         artistCommunityInformations = new ArrayList<>();
@@ -92,7 +96,7 @@ public class ConnectionNotificationsFragment extends AbstractFermatFragment<Arti
         try {
             rootView = inflater.inflate(R.layout.aac_fragment_connections_notificactions, container, false);
             setUpScreen(inflater);
-            recyclerView = (RecyclerView) rootView.findViewById(R.id.aac_recycler_view);
+            recyclerView = (RecyclerView) rootView.findViewById(R.id.aac_recyclerview);
             layoutManager = new LinearLayoutManager(getActivity(),LinearLayoutManager.VERTICAL,false);
             recyclerView.setLayoutManager(layoutManager);
             recyclerView.setHasFixedSize(true);
@@ -100,21 +104,23 @@ public class ConnectionNotificationsFragment extends AbstractFermatFragment<Arti
             adapter.setFermatListEventListener(this);
             recyclerView.setAdapter(adapter);
 
-            swipeRefresh = (SwipeRefreshLayout) rootView.findViewById(R.id.afc_swipeRefresh);
+            swipeRefresh = (SwipeRefreshLayout) rootView.findViewById(R.id.aac_swipeRefresh);
             swipeRefresh.setOnRefreshListener(this);
             swipeRefresh.setColorSchemeColors(Color.BLUE, Color.BLUE);
 
-            rootView.setBackgroundColor(Color.parseColor("#000b12"));
-            emptyView = (LinearLayout) rootView.findViewById(R.id.aac_empty_view);
+            //rootView.setBackgroundColor(Color.parseColor("#363636"));
+            emptyView = (LinearLayout) rootView.findViewById(R.id.aac_emptyview);
 
             onRefresh();
 
         } catch (Exception ex) {
             CommonLogger.exception(TAG, ex.getMessage(), ex);
             Toast.makeText(getActivity().getApplicationContext(), "Oooops! recovering from system error", Toast.LENGTH_SHORT).show();
+            System.out.println(ex.getMessage());
+            ex.printStackTrace();
 
         }
-
+        configureToolbar();
         return rootView;
     }
 
@@ -202,9 +208,7 @@ public class ConnectionNotificationsFragment extends AbstractFermatFragment<Arti
     @Override
     public void onItemClickListener(ArtistCommunityInformation data, int position) {
         try {
-            Toast.makeText(getActivity(), "TODO ACCEPT ->", Toast.LENGTH_LONG).show();
-            //moduleManager.acceptCryptoBroker(moduleManager.getSelectedActorIdentity(), data.getName(), data.getPublicKey(), data.getProfileImage());
-            AcceptDialog notificationAcceptDialog = new AcceptDialog(getActivity(), appSession, appResourcesProviderManager, data, moduleManager.getSelectedActorIdentity());
+            AcceptDialog notificationAcceptDialog = new AcceptDialog(getActivity(), appSession, null, data, moduleManager.getSelectedActorIdentity());
             notificationAcceptDialog.setOnDismissListener(this);
             notificationAcceptDialog.show();
         } catch (CantGetSelectedActorIdentityException |ActorIdentityNotSelectedException e) {
@@ -240,4 +244,16 @@ public class ConnectionNotificationsFragment extends AbstractFermatFragment<Arti
     public void onDismiss(DialogInterface dialog) {
         onRefresh();
     }
+
+    private void configureToolbar() {
+        Toolbar toolbar = getToolbar();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP)
+            toolbar.setBackground(getResources().getDrawable(R.drawable.degrade_colorj, null));
+        else
+            toolbar.setBackground(getResources().getDrawable(R.drawable.degrade_colorj));
+
+        toolbar.setTitleTextColor(Color.WHITE);
+        if (toolbar.getMenu() != null) toolbar.getMenu().clear();
+    }
+
 }

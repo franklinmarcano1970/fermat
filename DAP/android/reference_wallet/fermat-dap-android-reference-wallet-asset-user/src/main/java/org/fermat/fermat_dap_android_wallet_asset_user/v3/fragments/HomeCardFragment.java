@@ -9,7 +9,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.SearchView;
+import android.widget.SearchView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -18,6 +18,7 @@ import android.view.View;
 import android.view.Window;
 import android.widget.Toast;
 
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.ui.Views.ConfirmDialog;
 import com.bitdubai.fermat_android_api.ui.Views.PresentationDialog;
 import com.bitdubai.fermat_android_api.ui.adapters.FermatAdapter;
@@ -27,14 +28,16 @@ import com.bitdubai.fermat_android_api.ui.interfaces.FermatListItemListeners;
 import com.bitdubai.fermat_android_api.ui.interfaces.FermatWorkerCallBack;
 import com.bitdubai.fermat_android_api.ui.util.FermatWorker;
 import com.bitdubai.fermat_api.FermatException;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedUIExceptionSeverity;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedWalletExceptionSeverity;
+import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
 import com.bitdubai.fermat_api.layer.all_definition.enums.UISource;
 import com.bitdubai.fermat_api.layer.all_definition.navigation_structure.enums.Activities;
 import com.bitdubai.fermat_api.layer.all_definition.navigation_structure.enums.Wallets;
-import com.bitdubai.fermat_api.layer.all_definition.settings.exceptions.CantPersistSettingsException;
-import com.bitdubai.fermat_api.layer.all_definition.settings.structure.SettingsManager;
+import com.bitdubai.fermat_api.layer.pip_engine.interfaces.ResourceProviderManager;
 import com.bitdubai.fermat_dap_android_wallet_asset_user_bitdubai.R;
 
-import org.fermat.fermat_dap_android_wallet_asset_user.sessions.AssetUserSession;
 import org.fermat.fermat_dap_android_wallet_asset_user.sessions.SessionConstantsAssetUser;
 import org.fermat.fermat_dap_android_wallet_asset_user.util.CommonLogger;
 import org.fermat.fermat_dap_android_wallet_asset_user.util.Utils;
@@ -42,27 +45,26 @@ import org.fermat.fermat_dap_android_wallet_asset_user.v2.common.data.DataManage
 import org.fermat.fermat_dap_android_wallet_asset_user.v2.models.Asset;
 import org.fermat.fermat_dap_android_wallet_asset_user.v3.common.adapters.HomeCardAdapter;
 import org.fermat.fermat_dap_android_wallet_asset_user.v3.common.filters.HomeCardAdapterFilter;
-
 import org.fermat.fermat_dap_api.layer.all_definition.DAPConstants;
 import org.fermat.fermat_dap_api.layer.all_definition.exceptions.CantGetIdentityAssetUserException;
 import org.fermat.fermat_dap_api.layer.dap_funds_transaction.asset_buyer.exceptions.CantProcessBuyingTransactionException;
 import org.fermat.fermat_dap_api.layer.dap_identity.asset_user.interfaces.IdentityAssetUser;
 import org.fermat.fermat_dap_api.layer.dap_module.wallet_asset_user.AssetUserSettings;
 import org.fermat.fermat_dap_api.layer.dap_module.wallet_asset_user.interfaces.AssetUserWalletSubAppModuleManager;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedUIExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedWalletExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static android.widget.Toast.makeText;
 
 /**
  * Created by Frank Contreras (contrerasfrank@gmail.com) on 3/17/16.
  */
-public class HomeCardFragment extends FermatWalletListFragment<Asset> implements FermatListItemListeners<Asset> {
+public class HomeCardFragment extends FermatWalletListFragment<Asset, ReferenceAppFermatSession<AssetUserWalletSubAppModuleManager>, ResourceProviderManager> implements FermatListItemListeners<Asset> {
     private Activity activity;
     // Data
     private List<Asset> assets;
@@ -74,10 +76,14 @@ public class HomeCardFragment extends FermatWalletListFragment<Asset> implements
 
     //FERMAT
     private AssetUserWalletSubAppModuleManager moduleManager;
+    AssetUserSettings settings = null;
     private ErrorManager errorManager;
-    private SettingsManager<AssetUserSettings> settingsManager;
 
     private long bitcoinWalletBalanceSatoshis;
+
+    private ExecutorService _executor;
+
+    private int menuItemSize;
 
     public static HomeCardFragment newInstance() {
         return new HomeCardFragment();
@@ -86,14 +92,16 @@ public class HomeCardFragment extends FermatWalletListFragment<Asset> implements
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);
-
         try {
+            setHasOptionsMenu(true);
+
+            _executor = Executors.newFixedThreadPool(3);
+
             appSession.setData("redeem_points", null);
 
-            moduleManager = ((AssetUserSession) appSession).getModuleManager();
+            moduleManager = appSession.getModuleManager();
             errorManager = appSession.getErrorManager();
-            settingsManager = appSession.getModuleManager().getSettingsManager();
+
             dataManager = new DataManager(moduleManager);
 
         } catch (Exception ex) {
@@ -116,11 +124,25 @@ public class HomeCardFragment extends FermatWalletListFragment<Asset> implements
         configureToolbar();
         noAssetsView = layout.findViewById(R.id.dap_v3_wallet_asset_user_home_no_assets);
 
-        assets = (List) getMoreDataAsync(FermatRefreshTypes.NEW, 0);
-        showOrHideNoAssetsView(assets.isEmpty());
         try {
-            bitcoinWalletBalanceSatoshis = moduleManager.getBitcoinWalletBalance(Utils.getBitcoinWalletPublicKey(moduleManager));
+            _executor.submit(new Runnable() {
+                @Override
+                public void run() {
+                    assets = getMoreDataAsync(FermatRefreshTypes.NEW, 0);
+                    showOrHideNoAssetsView(assets.isEmpty());
+                }
+            });
+
+            try {
+                bitcoinWalletBalanceSatoshis = moduleManager.getBitcoinWalletBalance(Utils.getBitcoinWalletPublicKey(moduleManager));
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
         } catch (Exception e) {
+            if (errorManager != null)
+                errorManager.reportUnexpectedWalletException(Wallets.DAP_ASSET_USER_WALLET,
+                        UnexpectedWalletExceptionSeverity.DISABLES_THIS_FRAGMENT, e);
             // bitcoinBalanceText.setText(getResources().getString(R.string.dap_user_wallet_buy_no_available));
         }
 
@@ -151,42 +173,64 @@ public class HomeCardFragment extends FermatWalletListFragment<Asset> implements
     }
 
     private void initSettings() {
-        settingsManager = appSession.getModuleManager().getSettingsManager();
-        AssetUserSettings settings = null;
-        try {
-            settings = settingsManager.loadAndGetSettings(appSession.getAppPublicKey());
-        } catch (Exception e) {
-            settings = null;
-        }
 
-        if (settings == null) {
-            settings = new AssetUserSettings();
-            settings.setIsContactsHelpEnabled(true);
-            settings.setIsPresentationHelpEnabled(true);
+        try {
+            moduleManager = appSession.getModuleManager();
 
             try {
-                settingsManager.persistSettings(appSession.getAppPublicKey(), settings);
-                moduleManager.setAppPublicKey(appSession.getAppPublicKey());
-
-                moduleManager.changeNetworkType(settings.getBlockchainNetwork().get(settings.getBlockchainNetworkPosition()));
-            } catch (CantPersistSettingsException e) {
-                e.printStackTrace();
+                settings = moduleManager.loadAndGetSettings(appSession.getAppPublicKey());
+            } catch (Exception e) {
+                settings = null;
             }
-        } else {
-            moduleManager.changeNetworkType(settings.getBlockchainNetwork().get(settings.getBlockchainNetworkPosition()));
-        }
 
-        final AssetUserSettings assetUserSettingsTemp = settings;
+            if (settings == null) {
+                int position = 0;
+                settings = new AssetUserSettings();
+                settings.setIsContactsHelpEnabled(true);
+                settings.setNotificationEnabled(true);
+                settings.setIsPresentationHelpEnabled(true);
+                settings.setNotificationEnabled(true);
+                settings.setAssetNotificationEnabled(true);
 
+                settings.setBlockchainNetwork(Arrays.asList(BlockchainNetworkType.values()));
+                for (BlockchainNetworkType networkType : Arrays.asList(BlockchainNetworkType.values())) {
+                    if (networkType.getCode().equals(BlockchainNetworkType.getDefaultBlockchainNetworkType().getCode())) {
+                        settings.setBlockchainNetworkPosition(position);
+                        break;
+                    } else {
+                        position++;
+                    }
+                }
 
-        Handler handlerTimer = new Handler();
-        handlerTimer.postDelayed(new Runnable() {
-            public void run() {
-                if (assetUserSettingsTemp.isPresentationHelpEnabled()) {
-                    setUpPresentation(false);
+//            try {
+                if (moduleManager != null) {
+                    moduleManager.persistSettings(appSession.getAppPublicKey(), settings);
+                    moduleManager.setAppPublicKey(appSession.getAppPublicKey());
+                    moduleManager.changeNetworkType(settings.getBlockchainNetwork().get(settings.getBlockchainNetworkPosition()));
+                }
+//            } catch (CantPersistSettingsException e) {
+//                e.printStackTrace();
+//            }
+            } else {
+                if (moduleManager != null) {
+                    moduleManager.changeNetworkType(settings.getBlockchainNetwork().get(settings.getBlockchainNetworkPosition()));
                 }
             }
-        }, 500);
+
+            final AssetUserSettings assetUserSettingsTemp = settings;
+
+            Handler handlerTimer = new Handler();
+            handlerTimer.postDelayed(new Runnable() {
+                public void run() {
+                    if (assetUserSettingsTemp.isPresentationHelpEnabled()) {
+                        setUpPresentation(false);
+                    }
+                }
+            }, 500);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private void setUpPresentation(boolean checkButton) {
@@ -194,14 +238,13 @@ public class HomeCardFragment extends FermatWalletListFragment<Asset> implements
             PresentationDialog presentationDialog = new PresentationDialog.Builder(getActivity(), appSession)
                     .setBannerRes(R.drawable.banner_asset_user_wallet)
                     .setIconRes(R.drawable.asset_user_wallet)
-                    .setImageLeft(R.drawable.asset_user_identity)
+                    .setImageLeft(R.drawable.profile_actor)
                     .setVIewColor(R.color.card_toolbar)
-                    .setTitleTextColor(R.color.card_toolbar)
                     .setTextNameLeft(R.string.dap_user_wallet_welcome_name_left)
                     .setSubTitle(R.string.dap_user_wallet_welcome_subTitle)
                     .setBody(R.string.dap_user_wallet_welcome_body)
                     .setTextFooter(R.string.dap_user_wallet_welcome_Footer)
-                    .setTemplateType((moduleManager.getActiveAssetUserIdentity() == null) ? PresentationDialog.TemplateType.DAP_TYPE_PRESENTATION : PresentationDialog.TemplateType.TYPE_PRESENTATION_WITHOUT_IDENTITIES)
+                    .setTemplateType((moduleManager.getActiveAssetUserIdentity() == null) ? PresentationDialog.TemplateType.TYPE_PRESENTATION_WITH_ONE_IDENTITY : PresentationDialog.TemplateType.TYPE_PRESENTATION_WITHOUT_IDENTITIES)
                     .setIsCheckEnabled(checkButton)
                     .build();
 
@@ -211,7 +254,6 @@ public class HomeCardFragment extends FermatWalletListFragment<Asset> implements
                     Object o = appSession.getData(SessionConstantsAssetUser.PRESENTATION_IDENTITY_CREATED);
                     if (o != null) {
                         if ((Boolean) (o)) {
-                            //invalidate();
                             appSession.removeData(SessionConstantsAssetUser.PRESENTATION_IDENTITY_CREATED);
                         }
                     }
@@ -235,26 +277,29 @@ public class HomeCardFragment extends FermatWalletListFragment<Asset> implements
     }
 
     @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        inflater.inflate(R.menu.dap_wallet_asset_user_home_menu, menu);
-        searchView = (SearchView) menu.findItem(R.id.action_wallet_user_search).getActionView();
-        searchView.setQueryHint(getResources().getString(R.string.dap_user_wallet_search_hint));
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String s) {
-                return false;
-            }
+    public void onOptionMenuPrepared(Menu menu){
+        super.onOptionMenuPrepared(menu);
 
-            @Override
-            public boolean onQueryTextChange(String s) {
-                if (s.equals(searchView.getQuery().toString())) {
-                    ((HomeCardAdapterFilter) ((HomeCardAdapter) getAdapter()).getFilter()).filter(s);
+        if (menuItemSize == 0 || menuItemSize == menu.size()) {
+            menuItemSize = menu.size();
+            searchView = (SearchView) menu.findItem(2).getActionView();
+//        searchView = (SearchView) menu.findItem(R.id.action_wallet_user_search).getActionView();
+            searchView.setQueryHint(getResources().getString(R.string.dap_user_wallet_search_hint));
+            searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
+                @Override
+                public boolean onQueryTextSubmit(String s) {
+                    return false;
                 }
-                return false;
-            }
-        });
-        menu.add(0, SessionConstantsAssetUser.IC_ACTION_USER_HELP_PRESENTATION, 2, "Help")
-                .setShowAsAction(MenuItem.SHOW_AS_ACTION_WITH_TEXT);
+
+                @Override
+                public boolean onQueryTextChange(String s) {
+                    if (s.equals(searchView.getQuery().toString())) {
+                        ((HomeCardAdapterFilter) ((HomeCardAdapter) getAdapter()).getFilter()).filter(s);
+                    }
+                    return false;
+                }
+            });
+        }
     }
 
     @Override
@@ -262,10 +307,16 @@ public class HomeCardFragment extends FermatWalletListFragment<Asset> implements
         try {
             int id = item.getItemId();
 
-            if (id == SessionConstantsAssetUser.IC_ACTION_USER_HELP_PRESENTATION) {
-                setUpPresentation(settingsManager.loadAndGetSettings(appSession.getAppPublicKey()).isPresentationHelpEnabled());
-                return true;
+            switch (id) {
+                case 1://IC_ACTION_USER_HELP_PRESENTATION
+                    setUpPresentation(moduleManager.loadAndGetSettings(appSession.getAppPublicKey()).isPresentationHelpEnabled());
+                    break;
             }
+
+//            if (id == SessionConstantsAssetUser.IC_ACTION_USER_HELP_PRESENTATION) {
+//                setUpPresentation(moduleManager.loadAndGetSettings(appSession.getAppPublicKey()).isPresentationHelpEnabled());
+//                return true;
+//            }
 
         } catch (Exception e) {
             errorManager.reportUnexpectedUIException(UISource.ACTIVITY, UnexpectedUIExceptionSeverity.UNSTABLE, FermatException.wrapException(e));
@@ -282,7 +333,7 @@ public class HomeCardFragment extends FermatWalletListFragment<Asset> implements
 
     @Override
     protected boolean hasMenu() {
-        return false;
+        return true;
     }
 
     @Override

@@ -40,8 +40,7 @@ public abstract class FermatAdapter<M, H extends FermatViewHolder> extends Recyc
 
     @Override
     public void onBindViewHolder(H holder, final int position) {
-        try
-        {
+        try {
             // setting up custom listeners
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -62,9 +61,7 @@ public abstract class FermatAdapter<M, H extends FermatViewHolder> extends Recyc
                 }
             });
             bindHolder(holder, getItem(position), position);
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -91,8 +88,16 @@ public abstract class FermatAdapter<M, H extends FermatViewHolder> extends Recyc
      * @param dataSet new ArrayList of model to change
      */
     public void changeDataSet(List<M> dataSet) {
+        onChangeDataSet();
         this.dataSet = dataSet;
         notifyDataSetChanged();
+    }
+
+    /**
+     * Notify subClass when dataset is change to stop work if is running
+     */
+    protected void onChangeDataSet() {
+
     }
 
     /**

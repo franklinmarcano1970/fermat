@@ -2,10 +2,12 @@ package com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.outgoing_intra_a
 
 import com.bitdubai.fermat_api.layer.all_definition.enums.Actors;
 import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
+import com.bitdubai.fermat_api.layer.all_definition.enums.CryptoCurrency;
 import com.bitdubai.fermat_api.layer.all_definition.enums.ReferenceWallet;
 import com.bitdubai.fermat_api.layer.all_definition.money.CryptoAddress;
 import com.bitdubai.fermat_api.layer.all_definition.transaction_transference_protocol.crypto_transactions.CryptoStatus;
-import com.bitdubai.fermat_ccp_api.layer.basic_wallet.bitcoin_wallet.interfaces.BitcoinWalletTransactionRecord;
+import com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.FeeOrigin;
+import com.bitdubai.fermat_ccp_api.layer.basic_wallet.crypto_wallet.interfaces.CryptoWalletTransactionRecord;
 import com.bitdubai.fermat_ccp_api.layer.basic_wallet.loss_protected_wallet.interfaces.BitcoinLossProtectedWalletTransactionRecord;
 import com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.outgoing_intra_actor.developer.bitdubai.version_1.enums.TransactionState;
 
@@ -14,10 +16,10 @@ import java.util.UUID;
 /**
  * Created by eze on 2015.09.21..
  */
-public class OutgoingIntraActorTransactionWrapper implements BitcoinWalletTransactionRecord,BitcoinLossProtectedWalletTransactionRecord {
+public class OutgoingIntraActorTransactionWrapper implements CryptoWalletTransactionRecord,BitcoinLossProtectedWalletTransactionRecord {
 
     /*
-     * BitcoinWalletTransactionRecord Interface member variables
+     * CryptoWalletTransactionRecord Interface member variables
      */
     private UUID          transactionId;
     private UUID          requestId;
@@ -34,6 +36,12 @@ public class OutgoingIntraActorTransactionWrapper implements BitcoinWalletTransa
     private String        memo;
     private boolean sameDevice;
     private BlockchainNetworkType blockchainNetworkType;
+    private CryptoCurrency cryptoCurrency;
+
+    private FeeOrigin FeeOrigin;
+    private long fee;
+    private long total;
+
 
     @Override
     public CryptoAddress getAddressFrom() {
@@ -74,6 +82,15 @@ public class OutgoingIntraActorTransactionWrapper implements BitcoinWalletTransa
     @Override
     public long getAmount() {
         return amount;
+    }
+
+    @Override
+    public long getTotal() {
+        return this.total;
+    }
+
+    public void setTotal(long total) {
+        this.total = total;
     }
 
     public void setAmount(long amount) {
@@ -131,6 +148,13 @@ public class OutgoingIntraActorTransactionWrapper implements BitcoinWalletTransa
 
     @Override
     public BlockchainNetworkType getBlockchainNetworkType() {return blockchainNetworkType;}
+
+    public void setCryptoCurrency(CryptoCurrency cryptoCurrency){ this.cryptoCurrency = cryptoCurrency; }
+
+    @Override
+    public CryptoCurrency getCryptoCurrency() {
+        return cryptoCurrency;
+    }
 
     @Override
     public long getExchangRate() {
@@ -199,4 +223,26 @@ public class OutgoingIntraActorTransactionWrapper implements BitcoinWalletTransa
     public void setSameDevice(boolean sameDevice) {
         this.sameDevice = sameDevice;
     }
+
+    public void setFeeOrigin(FeeOrigin feeOrigin) {
+        this.FeeOrigin = feeOrigin;
+    }
+
+    public FeeOrigin getFeeOrigin() {
+        if (FeeOrigin == null)
+            return com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.FeeOrigin.SUBSTRACT_FEE_FROM_AMOUNT;
+        else
+            return FeeOrigin;
+    }
+
+
+    public void setFee(long fee ) {
+        this.fee  = fee ;
+    }
+
+    public long getFee() {
+        return this.fee ;
+    }
+
+
 }

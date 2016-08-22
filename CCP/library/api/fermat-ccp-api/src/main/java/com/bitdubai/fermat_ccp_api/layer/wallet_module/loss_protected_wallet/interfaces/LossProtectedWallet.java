@@ -7,6 +7,13 @@ import com.bitdubai.fermat_api.layer.all_definition.enums.Platforms;
 import com.bitdubai.fermat_api.layer.all_definition.enums.ReferenceWallet;
 import com.bitdubai.fermat_api.layer.all_definition.enums.VaultType;
 import com.bitdubai.fermat_api.layer.all_definition.money.CryptoAddress;
+import com.bitdubai.fermat_api.layer.core.MethodDetail;
+import com.bitdubai.fermat_api.layer.modules.ModuleSettingsImpl;
+import com.bitdubai.fermat_api.layer.modules.common_classes.ActiveActorIdentityInformation;
+import com.bitdubai.fermat_api.layer.modules.interfaces.ModuleManager;
+import com.bitdubai.fermat_bch_api.layer.crypto_network.faucet.CantGetCoinsFromFaucetException;
+import com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.FeeOrigin;
+import com.bitdubai.fermat_ccp_api.all_definition.ExchangeRateProvider;
 import com.bitdubai.fermat_ccp_api.layer.basic_wallet.common.enums.BalanceType;
 import com.bitdubai.fermat_ccp_api.layer.basic_wallet.common.enums.TransactionType;
 import com.bitdubai.fermat_ccp_api.layer.basic_wallet.common.exceptions.CantLoadWalletException;
@@ -17,6 +24,7 @@ import com.bitdubai.fermat_ccp_api.layer.middleware.wallet_contacts.exceptions.W
 import com.bitdubai.fermat_ccp_api.layer.request.crypto_payment.exceptions.*;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.crypto_wallet.exceptions.CantListReceivePaymentRequestException;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.crypto_wallet.exceptions.ContactNameAlreadyExistsException;
+import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.LossProtectedWalletSettings;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exceptions.CantApproveLossProtectedRequestPaymentException;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exceptions.CantCreateLossProtectedWalletContactException;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exceptions.CantDeleteLossProtectedWalletContactException;
@@ -28,7 +36,6 @@ import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exc
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exceptions.CantGetCurrencyExchangeException;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exceptions.CantGetCurrencyExchangeProviderException;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exceptions.CantGetLossProtectedBalanceException;
-import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exceptions.CantListLossProtectedPaymentRequestDateOrderException;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exceptions.CantListLossProtectedReceivePaymentRequestException;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exceptions.CantListLossProtectedSentPaymentRequestException;
 import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exceptions.CantListLossProtectedSpendingException;
@@ -48,15 +55,13 @@ import com.bitdubai.fermat_ccp_api.layer.wallet_module.loss_protected_wallet.exc
 import com.bitdubai.fermat_ccp_api.layer.basic_wallet.common.exceptions.CantGetMnemonicTextException;
 
 import com.bitdubai.fermat_cer_api.all_definition.interfaces.ExchangeRate;
-import com.bitdubai.fermat_cer_api.layer.provider.interfaces.CurrencyExchangeRateProviderManager;
 import com.bitdubai.fermat_wpd_api.layer.wpd_middleware.wallet_manager.exceptions.CantListWalletsException;
 import com.bitdubai.fermat_wpd_api.layer.wpd_middleware.wallet_manager.interfaces.InstalledWallet;
 
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The interface <code>com.bitdubai.fermat_dmp_plugin.layer.wallet_module.crypto_wallet.CryptoWallet</code>
@@ -65,7 +70,8 @@ import java.util.concurrent.BlockingDeque;
  * Created by Natalia Cortez 03/14/2016
  * @version 1.0
  */
-public interface LossProtectedWallet extends Serializable {
+public interface LossProtectedWallet  extends Serializable,ModuleManager<LossProtectedWalletSettings,ActiveActorIdentityInformation>,ModuleSettingsImpl<LossProtectedWalletSettings> {
+
 
     /**
      * List all wallet contact related to an specific wallet.
@@ -77,6 +83,8 @@ public interface LossProtectedWallet extends Serializable {
      *
      * @throws CantGetAllLossProtectedWalletContactsException if something goes wrong
      */
+
+    @MethodDetail(looType = MethodDetail.LoopType.BACKGROUND,timeout = 30,timeoutUnit = TimeUnit.SECONDS)
     List<LossProtectedWalletContact> listWalletContacts(String walletPublicKey, String intraUserLoggedInPublicKey) throws CantGetAllLossProtectedWalletContactsException;
 
 
@@ -286,8 +294,7 @@ public interface LossProtectedWallet extends Serializable {
      * @param cryptoAddress to validate
      * @return boolean value, true if positive, false if negative.
      */
-    boolean isValidAddress(CryptoAddress cryptoAddress);
-    // TODO ADD BLOCKCHAIN CRYPTO NETWORK ENUM (TO VALIDATE WITH THE SPECIFIC NETWORK).
+    boolean isValidAddress(CryptoAddress cryptoAddress,BlockchainNetworkType blockchainNetworkType);
 
 
     CryptoAddress requestAddressToKnownUser(String deliveredByActorPublicKey,
@@ -313,13 +320,17 @@ public interface LossProtectedWallet extends Serializable {
 
     void send(long cryptoAmount,
               CryptoAddress destinationAddress,
-              String notes, String walletPublicKey,
+              String notes,
+              String walletPublicKey,
               String deliveredByActorPublicKey,
               Actors deliveredByActorType,
               String deliveredToActorPublicKey,
               Actors deliveredToActorType,
               ReferenceWallet referenceWallet,
-              BlockchainNetworkType blockchainNetworkType
+              BlockchainNetworkType blockchainNetworkType,
+              CryptoCurrency cryptoCurrency,
+              long fee,
+              FeeOrigin feeOrigin
               ) throws CantSendLossProtectedCryptoException, LossProtectedInsufficientFundsException;
 
 
@@ -327,10 +338,13 @@ public interface LossProtectedWallet extends Serializable {
                        String sendWalletPublicKey,
                        String receivedWalletPublicKey,
                        String notes,
-                       Actors deliveredToActorType,
+                       Actors actortypeFrom,
+                       Actors actortypeTo,
                        ReferenceWallet sendingWallet,
                        ReferenceWallet receivingWallet,
-                       BlockchainNetworkType blockchainNetworkType)throws CantSendLossProtectedCryptoException, LossProtectedInsufficientFundsException;
+                       BlockchainNetworkType blockchainNetworkType,
+                       CryptoCurrency cryptoCurrency
+                       )throws CantSendLossProtectedCryptoException, LossProtectedInsufficientFundsException;
 
 
     /**
@@ -514,6 +528,7 @@ public interface LossProtectedWallet extends Serializable {
      * @param walletPublicKey
      * @return List of PaymentRequest object
      */
+    @MethodDetail(looType = MethodDetail.LoopType.BACKGROUND,timeout = 30,timeoutUnit = TimeUnit.SECONDS)
     List<LossProtectedPaymentRequest> listReceivedPaymentRequest(String  walletPublicKey,BlockchainNetworkType blockchainNetworkType,int max,int offset)throws CantListLossProtectedReceivePaymentRequestException;
 
 
@@ -572,7 +587,8 @@ public interface LossProtectedWallet extends Serializable {
                                    final String                description      ,
                                    final long                  amount           ,
                                    final BlockchainNetworkType networkType      ,
-                                   final ReferenceWallet       referenceWallet) throws CantSendLossProtectedPaymentRequestException;
+                                   final ReferenceWallet       referenceWallet,
+                                   final CryptoCurrency         cryptoCurrency) throws CantSendLossProtectedPaymentRequestException;
 
     void createIntraUser(String name, String phrase, byte[] image) throws CantCreateNewIntraWalletUserException;
 
@@ -620,7 +636,7 @@ public interface LossProtectedWallet extends Serializable {
      * @return
      * @throws CantGetCurrencyExchangeProviderException
      */
-    Collection<CurrencyExchangeRateProviderManager> getExchangeRateProviderManagers() throws CantGetCurrencyExchangeProviderException;
+    List<ExchangeRateProvider> getExchangeRateProviderManagers() throws CantGetCurrencyExchangeProviderException;
 
     /**
      * Through the method <code>getInstalledWallets</code> you can get the list of wallets installed on platform
@@ -645,6 +661,8 @@ public interface LossProtectedWallet extends Serializable {
      * @return
      * @throws CantListLossProtectedTransactionsException
      */
+
+    @MethodDetail(looType = MethodDetail.LoopType.BACKGROUND,timeout = 30,timeoutUnit = TimeUnit.SECONDS)
     List<LossProtectedWalletTransaction> listAllActorTransactionsByTransactionType(BalanceType balanceType,
                                                                                    final TransactionType transactionType,
                                                                                    String walletPublicKey,
@@ -652,4 +670,6 @@ public interface LossProtectedWallet extends Serializable {
                                                                                    BlockchainNetworkType blockchainNetworkType,
                                                                                    int max,
                                                                                    int offset) throws CantListLossProtectedTransactionsException;
+
+    void testNetGiveMeCoins(BlockchainNetworkType blockchainNetworkType, CryptoAddress cryptoAddress) throws CantGetCoinsFromFaucetException;
 }

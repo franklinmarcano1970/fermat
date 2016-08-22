@@ -3,7 +3,6 @@ package com.bitdubai.fermat_cbp_plugin.layer.business_transaction.broker_submit_
 import com.bitdubai.fermat_api.FermatException;
 import com.bitdubai.fermat_api.layer.all_definition.enums.FiatCurrency;
 import com.bitdubai.fermat_api.layer.all_definition.enums.Platforms;
-import com.bitdubai.fermat_api.layer.all_definition.enums.Plugins;
 import com.bitdubai.fermat_api.layer.all_definition.exceptions.InvalidParameterException;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.CantInsertRecordException;
 import com.bitdubai.fermat_api.layer.world.interfaces.Currency;
@@ -31,16 +30,17 @@ import com.bitdubai.fermat_cbp_api.layer.wallet.crypto_broker.interfaces.CryptoB
 import com.bitdubai.fermat_cbp_api.layer.wallet.crypto_broker.interfaces.CryptoBrokerWalletManager;
 import com.bitdubai.fermat_cbp_api.layer.wallet.crypto_broker.interfaces.setting.CryptoBrokerWalletAssociatedSetting;
 import com.bitdubai.fermat_cbp_api.layer.wallet.crypto_broker.interfaces.setting.CryptoBrokerWalletSetting;
+import com.bitdubai.fermat_cbp_plugin.layer.business_transaction.broker_submit_offline_merchandise.developer.bitdubai.version_1.BrokerSubmitOfflineMerchandisePluginRoot;
 import com.bitdubai.fermat_cbp_plugin.layer.business_transaction.broker_submit_offline_merchandise.developer.bitdubai.version_1.database.BrokerSubmitOfflineMerchandiseBusinessTransactionDao;
 import com.bitdubai.fermat_cbp_plugin.layer.business_transaction.broker_submit_offline_merchandise.developer.bitdubai.version_1.exceptions.CantGetBrokerMerchandiseException;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+
+import static com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN;
 
 
 /**
@@ -72,19 +72,19 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
     /**
      * Represents the error manager
      */
-    ErrorManager errorManager;
+    BrokerSubmitOfflineMerchandisePluginRoot pluginRoot;
 
     public BrokerSubmitOfflineMerchandiseTransactionManager(BrokerSubmitOfflineMerchandiseBusinessTransactionDao dao,
                                                             CustomerBrokerContractSaleManager saleContractManager,
                                                             CustomerBrokerSaleNegotiationManager saleNegotiationManager,
                                                             CryptoBrokerWalletManager cryptoBrokerWalletManager,
-                                                            ErrorManager errorManager) {
+                                                            BrokerSubmitOfflineMerchandisePluginRoot pluginRoot) {
 
         this.dao = dao;
         this.saleContractManager = saleContractManager;
         this.saleNegotiationManager = saleNegotiationManager;
         this.cryptoBrokerWalletManager = cryptoBrokerWalletManager;
-        this.errorManager = errorManager;
+        this.pluginRoot = pluginRoot;
 
     }
 
@@ -93,10 +93,9 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
      * In this case, this method submit merchandise and not requires the cbpWalletPublicKey,
      * this public key can be obtained from the crypto broker wallet
      *
-     * @param referencePrice reference price
+     * @param referencePrice     reference price
      * @param cbpWalletPublicKey broker wallet public key
-     * @param contractHash contract Hash also known as contract ID
-     *
+     * @param contractHash       contract Hash also known as contract ID
      * @throws CantSubmitMerchandiseException
      */
     @Override
@@ -112,7 +111,7 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
             final Collection<Clause> clauses = saleNegotiation.getClauses();
             final String moneyTypeCode = NegotiationClauseHelper.getNegotiationClauseValue(clauses, ClauseType.BROKER_PAYMENT_METHOD);
             final MoneyType moneyType = MoneyType.getByCode(moneyTypeCode);
-            final String merchandiseCurrencyCode =  NegotiationClauseHelper.getNegotiationClauseValue(clauses, ClauseType.CUSTOMER_CURRENCY);
+            final String merchandiseCurrencyCode = NegotiationClauseHelper.getNegotiationClauseValue(clauses, ClauseType.CUSTOMER_CURRENCY);
             final FiatCurrency merchandiseCurrency = FiatCurrency.getByCode(merchandiseCurrencyCode);
 
 
@@ -159,26 +158,22 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
             submitMerchandise(referencePrice, cbpWalletPublicKey, offlineWalletPublicKey, contractHash, moneyType, merchandiseCurrency);
 
         } catch (CryptoBrokerWalletNotFoundException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BROKER_SUBMIT_OFFLINE_MERCHANDISE,
-                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantSubmitMerchandiseException(e, "Creating Broker Submit Online Merchandise Business Transaction",
                     "Cannot get the crypto broker wallet");
 
         } catch (CantGetCryptoBrokerWalletSettingException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BROKER_SUBMIT_OFFLINE_MERCHANDISE,
-                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantSubmitMerchandiseException(e, "Creating Broker Submit Online Merchandise Business Transaction",
                     "Cannot get the Crypto Wallet Setting");
 
         } catch (ObjectNotSetException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BROKER_SUBMIT_OFFLINE_MERCHANDISE,
-                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantSubmitMerchandiseException(e, "Creating Broker Submit Online Merchandise Business Transaction",
                     "Invalid input to this manager");
 
         } catch (Exception e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BROKER_SUBMIT_OFFLINE_MERCHANDISE,
-                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantSubmitMerchandiseException(e, "Unexpected Result", "Check the cause");
         }
     }
@@ -203,28 +198,23 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
             System.out.println("SUBMIT_OFFLINE_MERCHANDISE_MANAGER - persistContractInDatabase(...) called");
 
         } catch (CantGetListCustomerBrokerContractSaleException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BROKER_SUBMIT_OFFLINE_MERCHANDISE,
-                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantSubmitMerchandiseException(e, "Creating Broker Submit Offline Merchandise Business Transaction",
                     "Cannot get the CustomerBrokerContractSale");
         } catch (CantGetListSaleNegotiationsException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BROKER_SUBMIT_OFFLINE_MERCHANDISE,
-                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantSubmitMerchandiseException(e, "Creating Broker Submit Offline Merchandise Business Transaction",
                     "Cannot get the CustomerBrokerSaleNegotiation list");
         } catch (CantInsertRecordException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BROKER_SUBMIT_OFFLINE_MERCHANDISE,
-                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantSubmitMerchandiseException(e, "Creating Broker Submit Offline Merchandise Business Transaction",
                     "Cannot insert the record in database");
         } catch (ObjectNotSetException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BROKER_SUBMIT_OFFLINE_MERCHANDISE,
-                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantSubmitMerchandiseException(e, "Creating Broker Submit Offline Merchandise Business Transaction",
                     "Invalid input to this manager");
         } catch (Exception e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BROKER_SUBMIT_OFFLINE_MERCHANDISE,
-                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantSubmitMerchandiseException(e, "Unexpected Result", "Check the cause");
         }
     }
@@ -233,7 +223,6 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
      * This method returns a {@link CustomerBrokerSaleNegotiation} by the negotiation ID.
      *
      * @param negotiationId the negotiation ID
-     *
      * @return the {@link CustomerBrokerSaleNegotiation} object
      */
     private CustomerBrokerSaleNegotiation getCustomerBrokerSaleNegotiation(String negotiationId) throws CantGetListSaleNegotiationsException {
@@ -245,9 +234,7 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
      * This method gets the Merchandise type from Negotiation Clauses.
      *
      * @param saleNegotiation the negotiation object with all the info of the negotiation
-     *
      * @return the merchandise money type
-     *
      * @throws CantGetBrokerMerchandiseException
      */
     private MoneyType getMerchandiseMoneyType(CustomerBrokerSaleNegotiation saleNegotiation) throws CantGetBrokerMerchandiseException {
@@ -278,9 +265,7 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
      * This method gets the currency type from Negotiation Clauses.
      *
      * @param saleNegotiation the negotiation object with all the info of the negotiation
-     *
      * @return the merchandise fiat currency
-     *
      * @throws CantGetBrokerMerchandiseException
      */
     private FiatCurrency getFiatCurrency(
@@ -319,9 +304,8 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
             for (Clause clause : clauses) {
                 clauseType = clause.getType();
 
-                if (clauseType == ClauseType.BROKER_CURRENCY_QUANTITY) {
+                if (clauseType == ClauseType.CUSTOMER_CURRENCY_QUANTITY)
                     brokerAmountDouble = parseToDouble(clause.getValue());
-                }
             }
 
             return brokerAmountDouble;
@@ -340,9 +324,7 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
      * This method returns the actual ContractTransactionStatus by a contract hash/id
      *
      * @param contractHash the contract hash/id
-     *
      * @return the {@link ContractTransactionStatus} object
-     *
      * @throws UnexpectedResultReturnedFromDatabaseException
      */
     @Override
@@ -352,13 +334,11 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
             return dao.getContractTransactionStatus(contractHash);
 
         } catch (ObjectNotSetException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BROKER_SUBMIT_OFFLINE_MERCHANDISE,
-                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new UnexpectedResultReturnedFromDatabaseException("Cannot check a null contractHash/Id");
 
         } catch (Exception exception) {
-            errorManager.reportUnexpectedPluginException(Plugins.CUSTOMER_ONLINE_PAYMENT,
-                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, exception);
+            pluginRoot.reportError(DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, exception);
             throw new UnexpectedResultReturnedFromDatabaseException(exception, "Unexpected Result", "Check the cause");
         }
     }
@@ -367,9 +347,7 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
      * This method returns the transaction completion date. If returns 0 the transaction is processing.
      *
      * @param contractHash the contract hash/id
-     *
      * @return the time in millis
-     *
      * @throws CantGetCompletionDateException
      */
     @Override
@@ -379,13 +357,11 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
             return dao.getCompletionDateByContractHash(contractHash);
 
         } catch (UnexpectedResultReturnedFromDatabaseException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BROKER_SUBMIT_OFFLINE_MERCHANDISE,
-                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantGetCompletionDateException(e, "Getting completion date", "Unexpected exception from database");
 
         } catch (ObjectNotSetException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.BROKER_SUBMIT_OFFLINE_MERCHANDISE,
-                    UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            pluginRoot.reportError(DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
             throw new CantGetCompletionDateException(e, "Getting completion date", "The contract hash argument is null");
         }
     }
@@ -394,9 +370,7 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
      * This method parse a String object to a double value
      *
      * @param stringValue the string value
-     *
      * @return the double value
-     *
      * @throws InvalidParameterException
      */
     public double parseToDouble(String stringValue) throws InvalidParameterException {
@@ -404,7 +378,9 @@ public class BrokerSubmitOfflineMerchandiseTransactionManager implements BrokerS
             throw new InvalidParameterException("Cannot parse a null string value to long");
         } else {
             try {
-                return NumberFormat.getInstance().parse(stringValue).doubleValue();
+                System.out.println("LOSTOOW_BrokerSubmitOfflineMerchandiseTransactionManager_PARSE:"+stringValue);
+               // return NumberFormat.getInstance().parse(stringValue).doubleValue();
+                return Double.valueOf(stringValue);
             } catch (Exception exception) {
                 throw new InvalidParameterException(InvalidParameterException.DEFAULT_MESSAGE, FermatException.wrapException(exception),
                         "Parsing String object to long", "Cannot parse " + stringValue + " string value to long");

@@ -13,7 +13,9 @@
     <color name="wallet_store_activities_background">#fbf7ed</color>
 
 
-    <color name="green">#8bba9e</color>
+    <color name="green">#47BF73</color>
+    <color name="red">#bf292e</color>
+    <color name="yellow">#d5cd2e</color>
 
     <color name="nav_drawer_color">#0072bb</color>
 
@@ -24,4 +26,6 @@
     <color name="color_black_light">#99000000</color>
     <color name="secondary_text">#727272</color>
     <color name="primary_text">#212121</color>
+
+    <color name="cht_color_dialog_community">#47BF73</color>
 </resources>

@@ -71,7 +71,7 @@ public class DesktopDatabaseRecord implements DatabaseTableRecord {
     @Override
     public Integer getIntegerValue(String columnName) {
 
-        if (values.get(columnName) != null)
+        if (values.get(columnName) != null && !values.get(columnName).getValue().equals("null"))
             return Integer.valueOf(values.get(columnName).getValue());
         else
             return 0;
@@ -224,7 +224,7 @@ public class DesktopDatabaseRecord implements DatabaseTableRecord {
         StringBuilder buffer = new StringBuilder();
 
         buffer.append("[");
-        for (Map.Entry<String,DatabaseRecord> record : values.entrySet()) {
+        for (Map.Entry<String, DatabaseRecord> record : values.entrySet()) {
             buffer.append(" ")
                     .append(record.getValue().toString())
                     .append(",");

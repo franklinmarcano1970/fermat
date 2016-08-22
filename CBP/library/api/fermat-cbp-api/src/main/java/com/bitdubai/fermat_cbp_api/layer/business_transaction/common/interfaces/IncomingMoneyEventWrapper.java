@@ -17,6 +17,7 @@ public class IncomingMoneyEventWrapper {
     String walletPublicKey;
     String senderPublicKey;
     long timestamp;
+    String transactionHash;
 
     public IncomingMoneyEventWrapper(
             String eventId,
@@ -25,7 +26,8 @@ public class IncomingMoneyEventWrapper {
             CryptoCurrency cryptoCurrency,
             String walletPublicKey,
             String senderPublicKey,
-            long timestamp) {
+            long timestamp,
+            String transactionHash) {
         this.eventId = eventId;
         this.receiverPublicKey = receiverPublicKey;
         this.cryptoAmount = cryptoAmount;
@@ -33,18 +35,20 @@ public class IncomingMoneyEventWrapper {
         this.walletPublicKey = walletPublicKey;
         this.senderPublicKey = senderPublicKey;
         this.timestamp = timestamp;
+        this.transactionHash = transactionHash;
     }
 
     public IncomingMoneyEventWrapper(
             IncomingMoneyNotificationEvent incomingMoneyNotificationEvent
-    ){
-        this.eventId= UUID.randomUUID().toString();
-        this.receiverPublicKey=incomingMoneyNotificationEvent.getActorId();
-        this.cryptoAmount=incomingMoneyNotificationEvent.getAmount();
-        this.cryptoCurrency=incomingMoneyNotificationEvent.getCryptoCurrency();
-        this.walletPublicKey=incomingMoneyNotificationEvent.getWalletPublicKey();
-        this.senderPublicKey=incomingMoneyNotificationEvent.getIntraUserIdentityPublicKey();
-        this.timestamp=System.currentTimeMillis();
+    ) {
+        this.eventId = UUID.randomUUID().toString();
+        this.receiverPublicKey = incomingMoneyNotificationEvent.getActorId();
+        this.cryptoAmount = incomingMoneyNotificationEvent.getAmount();
+        this.cryptoCurrency = incomingMoneyNotificationEvent.getCryptoCurrency();
+        this.walletPublicKey = incomingMoneyNotificationEvent.getWalletPublicKey();
+        this.senderPublicKey = incomingMoneyNotificationEvent.getIntraUserIdentityPublicKey();
+        this.timestamp = System.currentTimeMillis();
+        this.transactionHash = incomingMoneyNotificationEvent.getTransactionHash();
     }
 
     public String getEventId() {
@@ -99,15 +103,16 @@ public class IncomingMoneyEventWrapper {
         this.senderPublicKey = senderPublicKey;
     }
 
+    public String getTransactionHash() {
+        return transactionHash;
+    }
+
+    public void setTransactionHash(String transactionHash) {
+        this.transactionHash = transactionHash;
+    }
+
     @Override
     public String toString() {
-        return "IncomingMoneyEventWrapper{" +
-                "eventId='" + eventId + '\'' +
-                ", receiverPublicKey='" + receiverPublicKey + '\'' +
-                ", cryptoAmount=" + cryptoAmount +
-                ", cryptoCurrency=" + cryptoCurrency +
-                ", walletPublicKey='" + walletPublicKey + '\'' +
-                ", senderPublicKey='" + senderPublicKey + '\'' +
-                '}';
+        return "IncomingMoneyEventWrapper{" + "eventId='" + eventId + '\'' + ", receiverPublicKey='" + receiverPublicKey + '\'' + ", cryptoAmount=" + cryptoAmount + ", cryptoCurrency=" + cryptoCurrency + ", walletPublicKey='" + walletPublicKey + '\'' + ", senderPublicKey='" + senderPublicKey + '\'' + ", transactionHash='" + transactionHash + '\'' + '}';
     }
 }

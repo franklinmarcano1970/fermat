@@ -4,6 +4,7 @@ import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
 import com.bitdubai.fermat_api.layer.all_definition.enums.CryptoCurrency;
 import com.bitdubai.fermat_api.layer.all_definition.enums.Platforms;
 import com.bitdubai.fermat_api.layer.all_definition.exceptions.InvalidParameterException;
+import com.bitdubai.fermat_bch_api.layer.definition.crypto_fee.FeeOrigin;
 import com.bitdubai.fermat_cbp_api.all_definition.enums.OriginTransaction;
 import com.bitdubai.fermat_cbp_api.layer.middleware.matching_engine.exceptions.CantExtractEarningsException;
 import com.bitdubai.fermat_cbp_api.layer.middleware.matching_engine.interfaces.EarningExtractor;
@@ -27,10 +28,10 @@ public class CryptoEarningExtractor implements EarningExtractor {
     }
 
     @Override
-    public void applyEarningExtraction(EarningsPair earningsPair, float amount, String earningWalletPublicKey, String brokerWalletPublicKey) throws CantExtractEarningsException {
+    public void applyEarningExtraction(EarningsPair earningsPair, float amount, String earningWalletPublicKey, String brokerWalletPublicKey, String brokerIdentityPublicKey, long fee, FeeOrigin feeOrigin) throws CantExtractEarningsException {
         try {
             cryptoMoneyDestockManager.createTransactionDestock(
-                    "Actor",
+                    brokerIdentityPublicKey,
                     CryptoCurrency.getByCode(earningsPair.getEarningCurrency().getCode()),
                     brokerWalletPublicKey,
                     earningWalletPublicKey,
@@ -39,7 +40,7 @@ public class CryptoEarningExtractor implements EarningExtractor {
                     BigDecimal.ZERO,
                     OriginTransaction.EARNING_EXTRACTION,
                     earningsPair.getId().toString(),
-                    BlockchainNetworkType.getDefaultBlockchainNetworkType());
+                    BlockchainNetworkType.getDefaultBlockchainNetworkType(), fee, feeOrigin);
 
         } catch (CantCreateCryptoMoneyDestockException e) {
             throw new CantExtractEarningsException(e, "Trying to make the Crypto Destock of the merchandise",

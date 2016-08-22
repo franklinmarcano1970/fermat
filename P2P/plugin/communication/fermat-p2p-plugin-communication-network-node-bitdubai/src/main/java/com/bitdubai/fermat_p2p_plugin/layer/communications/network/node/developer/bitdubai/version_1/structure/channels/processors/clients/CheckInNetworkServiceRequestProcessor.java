@@ -1,18 +1,23 @@
 package com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.processors.clients;
 
-import com.bitdubai.fermat_p2p_api.layer.all_definition.common.network_services.template.exceptions.CantInsertRecordDataBaseException;
-import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.Package;
+import com.bitdubai.fermat_api.layer.osa_android.database_system.DatabaseTransaction;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.client.request.CheckInProfileMsgRequest;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.client.respond.CheckInProfileMsjRespond;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.profiles.NetworkServiceProfile;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.HeadersAttName;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.MessageContentType;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.PackageType;
+import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.Package;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.endpoinsts.FermatWebSocketChannelEndpoint;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.processors.PackageProcessor;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.database.utils.DatabaseTransactionStatementPair;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.entities.CheckedInNetworkService;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.entities.CheckedNetworkServicesHistory;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.CantCreateTransactionStatementPairException;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.CantInsertRecordDataBaseException;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.CantReadRecordDataBaseException;
 
+import org.apache.commons.lang.ClassUtils;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
@@ -34,7 +39,7 @@ public class CheckInNetworkServiceRequestProcessor extends PackageProcessor {
     /**
      * Represent the LOG
      */
-    private final Logger LOG = Logger.getLogger(CheckInNetworkServiceRequestProcessor.class.getName());
+    private final Logger LOG = Logger.getLogger(ClassUtils.getShortClassName(CheckInNetworkServiceRequestProcessor.class));
 
     /**
      * Constructor  whit parameter
@@ -78,26 +83,43 @@ public class CheckInNetworkServiceRequestProcessor extends PackageProcessor {
                  */
                 networkServiceProfile = (NetworkServiceProfile) messageContent.getProfileToRegister();
 
+                // create transaction for
+                DatabaseTransaction databaseTransaction = getDaoFactory().getCheckedInNetworkServiceDao().getNewTransaction();
+                DatabaseTransactionStatementPair pair;
+
                 /*
                  * CheckedInNetworkService into data base
                  */
-                insertCheckedInNetworkService(networkServiceProfile);
+                pair = insertCheckedInNetworkService(networkServiceProfile);
+
+                if (!getDaoFactory().getCheckedInNetworkServiceDao().exists(networkServiceProfile.getIdentityPublicKey())) {
+
+                    databaseTransaction.addRecordToInsert(pair.getTable(), pair.getRecord());
+
+                } else {
+
+                    if(validateProfileChange(networkServiceProfile))
+                        databaseTransaction.addRecordToUpdate(pair.getTable(), pair.getRecord());
+                }
 
                 /*
                  * CheckedInNetworkServiceHistory into data base
                  */
-                insertCheckedInNetworkServiceHistory(networkServiceProfile);
+                pair = insertCheckedInNetworkServiceHistory(networkServiceProfile);
+                databaseTransaction.addRecordToInsert(pair.getTable(), pair.getRecord());
+
+                databaseTransaction.execute();
 
                 /*
                  * If all ok, respond whit success message
                  */
                 CheckInProfileMsjRespond respondProfileCheckInMsj = new CheckInProfileMsjRespond(CheckInProfileMsjRespond.STATUS.SUCCESS, CheckInProfileMsjRespond.STATUS.SUCCESS.toString(), networkServiceProfile.getIdentityPublicKey());
-                Package packageRespond = Package.createInstance(respondProfileCheckInMsj.toJson(), packageReceived.getNetworkServiceTypeSource(), PackageType.CHECK_IN_NETWORK_SERVICE_RESPOND, channelIdentityPrivateKey, destinationIdentityPublicKey);
+                Package packageRespond = Package.createInstance(respondProfileCheckInMsj.toJson(), packageReceived.getNetworkServiceTypeSource(), PackageType.CHECK_IN_NETWORK_SERVICE_RESPONSE, channelIdentityPrivateKey, destinationIdentityPublicKey);
 
                 /*
                  * Send the respond
                  */
-                session.getBasicRemote().sendObject(packageRespond);
+                session.getAsyncRemote().sendObject(packageRespond);
 
             }
 
@@ -111,19 +133,16 @@ public class CheckInNetworkServiceRequestProcessor extends PackageProcessor {
                  * Respond whit fail message
                  */
                 CheckInProfileMsjRespond respondProfileCheckInMsj = new CheckInProfileMsjRespond(CheckInProfileMsjRespond.STATUS.FAIL, exception.getLocalizedMessage(), networkServiceProfile.getIdentityPublicKey());
-                Package packageRespond = Package.createInstance(respondProfileCheckInMsj.toJson(), packageReceived.getNetworkServiceTypeSource(), PackageType.CHECK_IN_CLIENT_RESPOND, channelIdentityPrivateKey, destinationIdentityPublicKey);
+                Package packageRespond = Package.createInstance(respondProfileCheckInMsj.toJson(), packageReceived.getNetworkServiceTypeSource(), PackageType.CHECK_IN_CLIENT_RESPONSE, channelIdentityPrivateKey, destinationIdentityPublicKey);
 
                 /*
                  * Send the respond
                  */
-                session.getBasicRemote().sendObject(packageRespond);
+                session.getAsyncRemote().sendObject(packageRespond);
 
-            } catch (IOException iOException) {
-                LOG.error(iOException.getMessage());
-            } catch (EncodeException encodeException) {
-                LOG.error(encodeException.getMessage());
+            } catch (Exception e) {
+                LOG.error(e.getMessage());
             }
-
         }
 
     }
@@ -134,7 +153,8 @@ public class CheckInNetworkServiceRequestProcessor extends PackageProcessor {
      * @param networkServiceProfile
      * @throws CantInsertRecordDataBaseException
      */
-    private void insertCheckedInNetworkService(NetworkServiceProfile networkServiceProfile) throws CantInsertRecordDataBaseException {
+    private DatabaseTransactionStatementPair insertCheckedInNetworkService(NetworkServiceProfile networkServiceProfile) throws CantCreateTransactionStatementPairException, CantReadRecordDataBaseException {
+
 
         /*
         * Create the checkedInNetworkService
@@ -148,12 +168,16 @@ public class CheckInNetworkServiceRequestProcessor extends PackageProcessor {
         if (networkServiceProfile.getLocation() != null) {
             checkedInNetworkService.setLatitude(networkServiceProfile.getLocation().getLatitude());
             checkedInNetworkService.setLongitude(networkServiceProfile.getLocation().getLongitude());
+        } else {
+            checkedInNetworkService.setLatitude(0.0);
+            checkedInNetworkService.setLongitude(0.0);
         }
 
-        /*
-         * Save into the data base
-         */
-        getDaoFactory().getCheckedInNetworkServiceDao().create(checkedInNetworkService);
+        if (!getDaoFactory().getCheckedInNetworkServiceDao().exists(networkServiceProfile.getIdentityPublicKey()))
+            return getDaoFactory().getCheckedInNetworkServiceDao().createInsertTransactionStatementPair(checkedInNetworkService);
+        else
+            return getDaoFactory().getCheckedInNetworkServiceDao().createUpdateTransactionStatementPair(checkedInNetworkService);
+
     }
 
     /**
@@ -162,10 +186,10 @@ public class CheckInNetworkServiceRequestProcessor extends PackageProcessor {
      * @param networkServiceProfile
      * @throws CantInsertRecordDataBaseException
      */
-    private void insertCheckedInNetworkServiceHistory(NetworkServiceProfile networkServiceProfile) throws CantInsertRecordDataBaseException {
+    private DatabaseTransactionStatementPair insertCheckedInNetworkServiceHistory(NetworkServiceProfile networkServiceProfile) throws CantCreateTransactionStatementPairException {
 
         /*
-         * Create the CheckedClientsHistory
+         * Create the ClientsRegistrationHistory
          */
         CheckedNetworkServicesHistory checkedNetworkServicesHistory = new CheckedNetworkServicesHistory();
         checkedNetworkServicesHistory.setIdentityPublicKey(networkServiceProfile.getIdentityPublicKey());
@@ -182,7 +206,43 @@ public class CheckInNetworkServiceRequestProcessor extends PackageProcessor {
         /*
          * Save into the data base
          */
-        getDaoFactory().getCheckedNetworkServicesHistoryDao().create(checkedNetworkServicesHistory);
+        return getDaoFactory().getCheckedNetworkServicesHistoryDao().createInsertTransactionStatementPair(checkedNetworkServicesHistory);
+
+    }
+
+    /**
+     * Validate if the profile register have changes
+     *
+     * @param networkServiceProfile
+     * @return boolean
+     * @throws Exception
+     */
+    private boolean validateProfileChange(NetworkServiceProfile networkServiceProfile) throws Exception {
+
+               /*
+        * Create the checkedInNetworkService
+        */
+        CheckedInNetworkService checkedInNetworkService = new CheckedInNetworkService();
+        checkedInNetworkService.setIdentityPublicKey(networkServiceProfile.getIdentityPublicKey());
+        checkedInNetworkService.setClientIdentityPublicKey(networkServiceProfile.getClientIdentityPublicKey());
+        checkedInNetworkService.setNetworkServiceType(networkServiceProfile.getNetworkServiceType().getCode());
+
+        //Validate if location are available
+        if (networkServiceProfile.getLocation() != null) {
+            checkedInNetworkService.setLatitude(networkServiceProfile.getLocation().getLatitude());
+            checkedInNetworkService.setLongitude(networkServiceProfile.getLocation().getLongitude());
+        } else {
+            checkedInNetworkService.setLatitude(0.0);
+            checkedInNetworkService.setLongitude(0.0);
+        }
+
+        CheckedInNetworkService checkedInNetworkServiceRegistered = getDaoFactory().getCheckedInNetworkServiceDao().findById(networkServiceProfile.getIdentityPublicKey());
+
+        if (!checkedInNetworkServiceRegistered.equals(checkedInNetworkService)){
+            return Boolean.TRUE;
+        }else {
+            return Boolean.FALSE;
+        }
 
     }
 

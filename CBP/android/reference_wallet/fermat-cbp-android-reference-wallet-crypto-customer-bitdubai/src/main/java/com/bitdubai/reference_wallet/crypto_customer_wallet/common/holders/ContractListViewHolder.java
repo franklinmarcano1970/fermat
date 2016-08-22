@@ -1,6 +1,7 @@
 package com.bitdubai.reference_wallet.crypto_customer_wallet.common.holders;
 
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.NonNull;
 import android.text.format.DateFormat;
@@ -17,20 +18,22 @@ import com.bitdubai.reference_wallet.crypto_customer_wallet.R;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 
+
 /**
- * Created by nelson on 21/10/15.
+ * Created by Nelson Ramirez (nelsonalfo@gmail.com) on 21/10/15.
  */
 public class ContractListViewHolder extends FermatViewHolder {
     private static final DecimalFormat decimalFormat = (DecimalFormat) NumberFormat.getInstance();
+    private final String LANGUAGE = Resources.getSystem().getConfiguration().locale.getLanguage();
     private Resources res;
     private View itemView;
 
-    public ImageView customerImage;
-    public FermatTextView customerName;
+    public ImageView brokerImage;
+    public FermatTextView brokerName;
     public FermatTextView soldQuantityAndCurrency;
     public FermatTextView exchangeRateAmountAndCurrency;
     public FermatTextView lastUpdateDate;
-
+    public FermatTextView statusHistoryCustomer;
 
     /**
      * Public constructor for the custom child ViewHolder
@@ -38,25 +41,27 @@ public class ContractListViewHolder extends FermatViewHolder {
      * @param itemView the child ViewHolder's view
      */
     public ContractListViewHolder(View itemView) {
-        super(itemView);
+        super(itemView, 0);
 
         this.itemView = itemView;
         res = itemView.getResources();
 
-        customerImage = (ImageView) itemView.findViewById(R.id.ccw_customer_image);
-        customerName = (FermatTextView) itemView.findViewById(R.id.ccw_customer_name);
+        brokerImage = (ImageView) itemView.findViewById(R.id.ccw_customer_image);
+        brokerName = (FermatTextView) itemView.findViewById(R.id.ccw_customer_name);
         soldQuantityAndCurrency = (FermatTextView) itemView.findViewById(R.id.ccw_sold_quantity_and_currency);
         exchangeRateAmountAndCurrency = (FermatTextView) itemView.findViewById(R.id.ccw_exchange_rate_amount_and_currency);
         lastUpdateDate = (FermatTextView) itemView.findViewById(R.id.ccw_last_update_date);
+        statusHistoryCustomer = (FermatTextView) itemView.findViewById(R.id.ccw_customer_status_history);
     }
 
     public void bind(ContractBasicInformation itemInfo) {
         ContractStatus contractStatus = itemInfo.getStatus();
 
         itemView.setBackgroundColor(getStatusBackgroundColor(contractStatus));
-        customerName.setText(itemInfo.getCryptoCustomerAlias());
-        customerImage.setImageDrawable(getImgDrawable(itemInfo.getCryptoCustomerImage()));
+        brokerName.setText(itemInfo.getCryptoBrokerAlias());
+        brokerImage.setImageDrawable(getImgDrawable(itemInfo.getCryptoBrokerImage()));
 
+        statusHistoryCustomer.setText(getContractStatusFriendlyName(contractStatus));
         String soldQuantityAndCurrencyText = getSoldQuantityAndCurrencyText(itemInfo, contractStatus);
         soldQuantityAndCurrency.setText(soldQuantityAndCurrencyText);
 
@@ -65,6 +70,15 @@ public class ContractListViewHolder extends FermatViewHolder {
 
         CharSequence date = DateFormat.format("dd MMM yyyy", itemInfo.getLastUpdate());
         lastUpdateDate.setText(date);
+    }
+
+    private String getContractStatusFriendlyName(ContractStatus contractStatus) {
+        if (contractStatus == ContractStatus.COMPLETED)
+            return LANGUAGE.equalsIgnoreCase("es") ? "Completado" : contractStatus.getFriendlyName();
+        if (contractStatus == ContractStatus.CANCELLED)
+            return LANGUAGE.equalsIgnoreCase("es") ? "Cancelado" : contractStatus.getFriendlyName();
+
+        return null;
     }
 
     @NonNull
@@ -86,16 +100,15 @@ public class ContractListViewHolder extends FermatViewHolder {
     }
 
     private int getStatusBackgroundColor(ContractStatus status) {
-        if (status == ContractStatus.PENDING_PAYMENT)
-            return res.getColor(R.color.waiting_for_customer_list_item_background);
+        int color = -1;
 
         if (status == ContractStatus.CANCELLED)
-            return res.getColor(R.color.contract_cancelled_list_item_background);
+            color = Color.parseColor("#c6c6c6");
 
         if (status == ContractStatus.COMPLETED)
-            return res.getColor(R.color.contract_completed_list_item_background);
+            color = Color.parseColor("#f3f3f3");
 
-        return res.getColor(R.color.waiting_for_broker_list_item_background);
+        return color;
     }
 
     private String getSellingOrSoldText(ContractStatus status) {

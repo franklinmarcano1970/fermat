@@ -4,7 +4,7 @@ package com.bitdubai.fermat_cbp_plugin.layer.actor.crypto_broker.developer.bitdu
  * The Class <code>com.bitdubai.fermat_cbp_plugin.layer.actor.crypto_broker.developer.bitdubai.version_1.database.CryptoBrokerActorDatabaseConstants</code>
  * keeps constants the column names of the database.<p/>
  * <p/>
- *
+ * <p/>
  * Created by Angel Veloz - (vlzangel91@gmail.com) on 16/01/16.
  *
  * @version 1.0
@@ -12,6 +12,7 @@ package com.bitdubai.fermat_cbp_plugin.layer.actor.crypto_broker.developer.bitdu
  */
 public class CryptoBrokerActorDatabaseConstants {
 
+    public static final String DATABASE_NAME = "actor_crypto_broker";
     /**
      * Crypto Broker Actor Relationship database table definition.
      */
@@ -45,17 +46,5 @@ public class CryptoBrokerActorDatabaseConstants {
     static final String QUOTE_EXTRA_DATA_PRICE_COLUMN_NAME = "price";
 
     static final String QUOTE_EXTRA_DATA_FIRST_KEY_COLUMN = "quote_id";
-
-    /**
-     * Platforms Extra Data database table definition.
-     */
-    static final String PLATFORMS_EXTRA_DATA_TABLE_NAME = "platforms_extra_data";
-
-    static final String PLATFORMS_EXTRA_DATA_PLATFORM_ID_COLUMN_NAME = "platform_id";
-    static final String PLATFORMS_EXTRA_DATA_BROKER_PUBLIC_KEY_COLUMN_NAME = "broker_public_key";
-    static final String PLATFORMS_EXTRA_DATA_CURRENCY_COLUMN_NAME = "currency";
-    static final String PLATFORMS_EXTRA_DATA_PLATFORM_COLUMN_NAME = "platform";
-
-    static final String PLATFORMS_EXTRA_DATA_FIRST_KEY_COLUMN = "platform_id";
 
 }

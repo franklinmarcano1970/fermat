@@ -1,7 +1,7 @@
 package com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer.bitdubai.version_1.agents;
 
 import com.bitdubai.fermat_api.FermatAgent;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.utils.PluginVersionReference;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.enums.AgentStatus;
 import com.bitdubai.fermat_cbp_api.layer.middleware.matching_engine.exceptions.CantListEarningsPairsException;
 import com.bitdubai.fermat_cbp_api.layer.middleware.matching_engine.interfaces.EarningsPair;
@@ -12,13 +12,12 @@ import com.bitdubai.fermat_cbp_api.layer.wallet.crypto_broker.exceptions.CryptoB
 import com.bitdubai.fermat_cbp_api.layer.wallet.crypto_broker.interfaces.CryptoBrokerWallet;
 import com.bitdubai.fermat_cbp_api.layer.wallet.crypto_broker.interfaces.CryptoBrokerWalletManager;
 import com.bitdubai.fermat_cbp_api.layer.wallet.crypto_broker.interfaces.setting.CurrencyMatching;
+import com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer.bitdubai.version_1.MatchingEngineMiddlewarePluginRoot;
 import com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer.bitdubai.version_1.database.MatchingEngineMiddlewareDao;
 import com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer.bitdubai.version_1.exceptions.CantCreateInputTransactionException;
 import com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer.bitdubai.version_1.exceptions.CantGetInputTransactionException;
 import com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer.bitdubai.version_1.exceptions.CantListWalletsException;
 import com.bitdubai.fermat_cbp_plugin.layer.middleware.matching_engine.developer.bitdubai.version_1.utils.MatchingEngineMiddlewareCurrencyPair;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -41,20 +40,17 @@ public final class MatchingEngineMiddlewareTransactionMonitorAgent extends Ferma
 
     private Thread agentThread;
 
-    private final CryptoBrokerWalletManager   cryptoBrokerWalletManager;
-    private final ErrorManager                errorManager             ;
-    private final MatchingEngineMiddlewareDao dao                      ;
-    private final PluginVersionReference      pluginVersionReference   ;
+    private final CryptoBrokerWalletManager cryptoBrokerWalletManager;
+    private final MatchingEngineMiddlewarePluginRoot pluginRoot;
+    private final MatchingEngineMiddlewareDao dao;
 
-    public MatchingEngineMiddlewareTransactionMonitorAgent(final CryptoBrokerWalletManager   cryptoBrokerWalletManager,
-                                                           final ErrorManager                errorManager             ,
-                                                           final MatchingEngineMiddlewareDao dao                      ,
-                                                           final PluginVersionReference      pluginVersionReference   ) {
+    public MatchingEngineMiddlewareTransactionMonitorAgent(final CryptoBrokerWalletManager cryptoBrokerWalletManager,
+                                                           final MatchingEngineMiddlewarePluginRoot pluginRoot,
+                                                           final MatchingEngineMiddlewareDao dao) {
 
         this.cryptoBrokerWalletManager = cryptoBrokerWalletManager;
-        this.errorManager              = errorManager             ;
-        this.dao                       = dao                      ;
-        this.pluginVersionReference    = pluginVersionReference   ;
+        this.pluginRoot = pluginRoot;
+        this.dao = dao;
 
         this.agentThread = new Thread(new Runnable() {
             @Override
@@ -74,7 +70,7 @@ public final class MatchingEngineMiddlewareTransactionMonitorAgent extends Ferma
     @Override
     public void stop() {
 
-        if(isRunning())
+        if (isRunning())
             this.agentThread.interrupt();
 
         this.status = AgentStatus.STOPPED;
@@ -110,7 +106,7 @@ public final class MatchingEngineMiddlewareTransactionMonitorAgent extends Ferma
 
         } catch (CantListWalletsException cantListWalletsException) {
 
-            errorManager.reportUnexpectedPluginException(pluginVersionReference, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cantListWalletsException);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cantListWalletsException);
             return;
         }
 
@@ -131,7 +127,7 @@ public final class MatchingEngineMiddlewareTransactionMonitorAgent extends Ferma
 
         } catch (CryptoBrokerWalletNotFoundException cryptoBrokerWalletNotFoundException) {
 
-            errorManager.reportUnexpectedPluginException(pluginVersionReference, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cryptoBrokerWalletNotFoundException);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cryptoBrokerWalletNotFoundException);
             return;
         }
 
@@ -143,7 +139,7 @@ public final class MatchingEngineMiddlewareTransactionMonitorAgent extends Ferma
 
         } catch (CantGetTransactionCryptoBrokerWalletMatchingException cantGetTransactionCryptoBrokerWalletMatchingException) {
 
-            errorManager.reportUnexpectedPluginException(pluginVersionReference, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cantGetTransactionCryptoBrokerWalletMatchingException);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cantGetTransactionCryptoBrokerWalletMatchingException);
             return;
         }
 
@@ -167,31 +163,28 @@ public final class MatchingEngineMiddlewareTransactionMonitorAgent extends Ferma
 
         } catch (CantListEarningsPairsException cantListEarningsPairsException) {
 
-            errorManager.reportUnexpectedPluginException(pluginVersionReference, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cantListEarningsPairsException);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cantListEarningsPairsException);
             return;
         }
 
         MatchingEngineMiddlewareCurrencyPair currencyPair;
 
-        List<String > transactionsToMarkAsSeen = new ArrayList<>();
+        List<String> transactionsToMarkAsSeen = new ArrayList<>();
 
         for (CurrencyMatching currencyMatching : currencyMatchingList) {
 
             try {
 
                 currencyPair = new MatchingEngineMiddlewareCurrencyPair(
-                        currencyMatching.getCurrencyGiving()   ,
+                        currencyMatching.getCurrencyGiving(),
                         currencyMatching.getCurrencyReceiving()
                 );
 
                 UUID earningPairId = linkedEarningPairs.get(currencyPair);
 
                 if (earningPairId == null) {
-                    errorManager.reportUnexpectedPluginException(
-                            pluginVersionReference,
-                            UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN,
-                            new CantCreateInputTransactionException("currencyMatching: " + currencyMatching, "There's no earnings pair set for this currency matching.")
-                    );
+
+                    pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, new CantCreateInputTransactionException("currencyMatching: " + currencyMatching, "There's no earnings pair set for this currency matching."));
 
                 } else {
 
@@ -205,7 +198,7 @@ public final class MatchingEngineMiddlewareTransactionMonitorAgent extends Ferma
                 }
             } catch (CantCreateInputTransactionException | CantGetInputTransactionException daoException) {
 
-                errorManager.reportUnexpectedPluginException(pluginVersionReference, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, daoException);
+                pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, daoException);
                 return;
             }
         }
@@ -216,7 +209,7 @@ public final class MatchingEngineMiddlewareTransactionMonitorAgent extends Ferma
 
         } catch (CantMarkAsSeenException cantMarkAsSeenException) {
 
-            errorManager.reportUnexpectedPluginException(pluginVersionReference, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cantMarkAsSeenException);
+            pluginRoot.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, cantMarkAsSeenException);
         }
 
     }

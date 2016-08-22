@@ -4,12 +4,13 @@ import com.bitdubai.fermat_cbp_api.all_definition.contract.ContractClause;
 import com.bitdubai.fermat_cbp_api.all_definition.enums.ContractStatus;
 import com.bitdubai.fermat_cbp_api.layer.contract.customer_broker_purchase.interfaces.CustomerBrokerContractPurchase;
 
+import java.io.Serializable;
 import java.util.Collection;
 
 /**
  * Created by Yordin Alayn on 30.03.16.
  */
-public class ContractPurchaseRecord implements CustomerBrokerContractPurchase {
+public class ContractPurchaseRecord implements CustomerBrokerContractPurchase, Serializable {
 
     private static final int HASH_PRIME_NUMBER_PRODUCT = 1117;
     private static final int HASH_PRIME_NUMBER_ADD = 3001;
@@ -48,10 +49,16 @@ public class ContractPurchaseRecord implements CustomerBrokerContractPurchase {
         return this.status;
     }
 
-    public Collection<ContractClause> getContractClause() {return clause; }
+    public Collection<ContractClause> getContractClause() {
+        return clause;
+    }
 
-    public Boolean getNearExpirationDatetime() { return this.nearExpirationDatetime; }
+    public Boolean getNearExpirationDatetime() {
+        return this.nearExpirationDatetime;
+    }
 
-    public String getCancelReason() { return this.cancelReason; }
+    public String getCancelReason() {
+        return this.cancelReason;
+    }
 
 }

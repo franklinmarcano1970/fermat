@@ -10,10 +10,11 @@ import com.bitdubai.fermat_wpd_api.layer.wpd_middleware.wallet_settings.exceptio
 import com.bitdubai.fermat_wpd_api.layer.wpd_middleware.wallet_settings.interfaces.WalletSettings;
 
 
+import java.io.Serializable;
 import java.util.Map;
 import java.util.UUID;
 
-public class LossProtectedWalletSettings implements WalletSettings {
+public class LossProtectedWalletSettings implements WalletSettings,Serializable {
 
     private IntraUserLoginIdentity lastSelectedIdentity;
     private boolean isPresentationHelpEnabled;
@@ -23,6 +24,7 @@ public class LossProtectedWalletSettings implements WalletSettings {
     private boolean notificationEnabled;
     private boolean lossProtectedEnabled;
     private UUID exchangeProvider;
+    private String feedLeel;
 
     public LossProtectedWalletSettings() {
         this.lastSelectedIdentity = null;
@@ -106,5 +108,11 @@ public class LossProtectedWalletSettings implements WalletSettings {
         this.lossProtectedEnabled = lossProtectedEnabled;
     }
 
+    public String getFeedLevel() {
+        return this.feedLeel;
+    }
 
+    public void setFeedLevel(String feedLeel) {
+        this.feedLeel = feedLeel;
+    }
 }

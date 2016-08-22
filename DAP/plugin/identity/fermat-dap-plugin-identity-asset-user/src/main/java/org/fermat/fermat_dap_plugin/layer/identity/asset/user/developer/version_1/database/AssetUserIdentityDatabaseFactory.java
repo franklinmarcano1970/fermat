@@ -9,25 +9,18 @@ import com.bitdubai.fermat_api.layer.osa_android.database_system.DealsWithPlugin
 import com.bitdubai.fermat_api.layer.osa_android.database_system.PluginDatabaseSystem;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.CantCreateDatabaseException;
 import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.CantCreateTableException;
-import com.bitdubai.fermat_pip_api.layer.platform_service.error_manager.DealsWithErrors;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 
 import java.util.UUID;
 
 /**
  * Created by Nerio on 17/09/15.
  */
-public class AssetUserIdentityDatabaseFactory implements DealsWithErrors, DealsWithPluginDatabaseSystem {
-
+public class AssetUserIdentityDatabaseFactory implements DealsWithPluginDatabaseSystem {
 
     /**
      * DealsWithPluginDatabaseSystem Interface member variables.
      */
     private PluginDatabaseSystem pluginDatabaseSystem;
-    /**
-     * DealsWithErrors Interface member variables.
-     */
-    private ErrorManager errorManager;
 
     public AssetUserIdentityDatabaseFactory(PluginDatabaseSystem pluginDatabaseSystem) {
         this.pluginDatabaseSystem = pluginDatabaseSystem;
@@ -60,6 +53,13 @@ public class AssetUserIdentityDatabaseFactory implements DealsWithErrors, DealsW
             table.addColumn(AssetUserIdentityDatabaseConstants.ASSET_USER_IDENTITY_PUBLIC_KEY_COLUMN_NAME, DatabaseDataType.STRING, 150, true);
             table.addColumn(AssetUserIdentityDatabaseConstants.ASSET_USER_IDENTITY_ALIAS_COLUMN_NAME, DatabaseDataType.STRING, 100, false);
             table.addColumn(AssetUserIdentityDatabaseConstants.ASSET_USER_IDENTITY_DEVICE_USER_PUBLIC_KEY_COLUMN_NAME, DatabaseDataType.STRING, 150, false);
+
+            table.addColumn(AssetUserIdentityDatabaseConstants.ASSET_USER_IDENTITY_COUNTRY_KEY_COLUMN, DatabaseDataType.STRING, 100, false);
+            table.addColumn(AssetUserIdentityDatabaseConstants.ASSET_USER_IDENTITY_CITY_KEY_COLUMN, DatabaseDataType.STRING, 100, false);
+            table.addColumn(AssetUserIdentityDatabaseConstants.ASSET_USER_IDENTITY_STATE_KEY_COLUMN, DatabaseDataType.STRING, 100, false);
+
+            table.addColumn(AssetUserIdentityDatabaseConstants.ASSET_USER_IDENTITY_ACCURACY_KEY_COLUMN, DatabaseDataType.INTEGER, 20, false);
+            table.addColumn(AssetUserIdentityDatabaseConstants.ASSET_USER_IDENTITY_FREQUENCY_KEY_COLUMN, DatabaseDataType.STRING, 20, false);
 
             table.addIndex(AssetUserIdentityDatabaseConstants.ASSET_USER_IDENTITY_FIRST_KEY_COLUMN);
 
@@ -95,10 +95,4 @@ public class AssetUserIdentityDatabaseFactory implements DealsWithErrors, DealsW
     public void setPluginDatabaseSystem(PluginDatabaseSystem pluginDatabaseSystem) {
         this.pluginDatabaseSystem = pluginDatabaseSystem;
     }
-
-    @Override
-    public void setErrorManager(ErrorManager errorManager) {
-        this.errorManager = errorManager;
-    }
-
 }

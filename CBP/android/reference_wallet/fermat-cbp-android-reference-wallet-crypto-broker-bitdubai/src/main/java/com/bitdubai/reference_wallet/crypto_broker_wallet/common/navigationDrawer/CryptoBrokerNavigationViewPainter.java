@@ -10,22 +10,25 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.RelativeLayout;
 
+import com.bitdubai.fermat_android_api.engine.FermatApplicationCaller;
 import com.bitdubai.fermat_android_api.engine.NavigationViewPainter;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.ui.adapters.FermatAdapter;
 import com.bitdubai.fermat_api.FermatException;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
+import com.bitdubai.fermat_api.layer.all_definition.enums.CryptoCurrency;
+import com.bitdubai.fermat_api.layer.all_definition.enums.CurrencyTypes;
 import com.bitdubai.fermat_api.layer.all_definition.enums.TimeFrequency;
-import com.bitdubai.fermat_api.layer.modules.common_classes.ActiveActorIdentityInformation;
+import com.bitdubai.fermat_api.layer.all_definition.util.BitcoinConverter;
 import com.bitdubai.fermat_api.layer.world.interfaces.Currency;
 import com.bitdubai.fermat_cbp_api.layer.identity.crypto_broker.interfaces.CryptoBrokerIdentity;
+import com.bitdubai.fermat_cbp_api.layer.middleware.matching_engine.interfaces.EarningTransaction;
 import com.bitdubai.fermat_cbp_api.layer.middleware.matching_engine.interfaces.EarningsPair;
-import com.bitdubai.fermat_cbp_api.layer.middleware.matching_engine.interfaces.EarningsSearch;
 import com.bitdubai.fermat_cbp_api.layer.wallet.crypto_broker.interfaces.setting.CryptoBrokerWalletAssociatedSetting;
 import com.bitdubai.fermat_cbp_api.layer.wallet_module.crypto_broker.interfaces.CryptoBrokerWalletModuleManager;
 import com.bitdubai.fermat_ccp_api.layer.module.intra_user.exceptions.CantGetActiveLoginIdentityException;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 import com.bitdubai.reference_wallet.crypto_broker_wallet.R;
 import com.bitdubai.reference_wallet.crypto_broker_wallet.common.models.EarningsDetailData;
-import com.bitdubai.reference_wallet.crypto_broker_wallet.session.CryptoBrokerWalletSession;
 import com.bitdubai.reference_wallet.crypto_broker_wallet.util.FragmentsCommons;
 
 import java.lang.ref.WeakReference;
@@ -34,27 +37,28 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.bitdubai.fermat_api.layer.all_definition.navigation_structure.enums.Wallets.CBP_CRYPTO_BROKER_WALLET;
 import static com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedWalletExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT;
+import static com.bitdubai.fermat_api.layer.all_definition.navigation_structure.enums.Wallets.CBP_CRYPTO_BROKER_WALLET;
 
 
 /**
  * Created by Nelson Ramirez
  * on 2015.11.24
  */
-public class CryptoBrokerNavigationViewPainter implements NavigationViewPainter {
+public class CryptoBrokerNavigationViewPainter extends NavigationViewPainter {
 
     private static final String TAG = "BrokerNavigationView";
 
     private CryptoBrokerWalletModuleManager moduleManager;
-    private CryptoBrokerWalletSession session;
+    private ReferenceAppFermatSession<CryptoBrokerWalletModuleManager> session;
     private CryptoBrokerIdentity actorIdentity;
-    private WeakReference<Context> activity;
     private ErrorManager errorManager;
     private NumberFormat numberFormat;
+    private WeakReference<FermatApplicationCaller> applicationsHelper;
 
-    public CryptoBrokerNavigationViewPainter(Context activity, CryptoBrokerWalletSession session) {
-        this.activity = new WeakReference<>(activity);
+    public CryptoBrokerNavigationViewPainter(Context activity, ReferenceAppFermatSession<CryptoBrokerWalletModuleManager> session,
+                                             FermatApplicationCaller applicationsHelper) {
+        super(activity);
         this.session = session;
 
         errorManager = session.getErrorManager();
@@ -62,6 +66,7 @@ public class CryptoBrokerNavigationViewPainter implements NavigationViewPainter 
         try {
             moduleManager = session.getModuleManager();
             actorIdentity = this.moduleManager.getAssociatedIdentity(session.getAppPublicKey());
+            this.applicationsHelper = new WeakReference<>(applicationsHelper);
 
         } catch (FermatException ex) {
             if (errorManager == null)
@@ -73,10 +78,10 @@ public class CryptoBrokerNavigationViewPainter implements NavigationViewPainter 
     }
 
     @Override
-    public View addNavigationViewHeader(ActiveActorIdentityInformation intraUserLoginIdentity) {
+    public View addNavigationViewHeader() {
         try {
-            return FragmentsCommons.setUpHeaderScreen((LayoutInflater) activity.get()
-                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE), activity.get(), actorIdentity);
+            return FragmentsCommons.setUpHeaderScreen((LayoutInflater) getContext()
+                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE),getContext(), actorIdentity, applicationsHelper.get());
         } catch (CantGetActiveLoginIdentityException e) {
             e.printStackTrace();
         }
@@ -89,9 +94,9 @@ public class CryptoBrokerNavigationViewPainter implements NavigationViewPainter 
             List<NavViewFooterItem> stockData = getStockData();
             List<NavViewFooterItem> earningsData = getEarningsData();
 
-            final CryptoBrokerNavigationViewAdapter adapter = new CryptoBrokerNavigationViewAdapter(activity.get(), stockData, earningsData);
-            adapter.setStockTitle("Current Stock");
-            adapter.setStockTitle("Daily Earnings");
+            final CryptoBrokerNavigationViewAdapter adapter = new CryptoBrokerNavigationViewAdapter(getContext(), stockData, earningsData);
+            adapter.setStockTitle(getContext().getResources().getString(R.string.current_stock));
+            adapter.setEarningsTitle(getContext().getResources().getString(R.string.daily_earnings));
 
             return adapter;
         } catch (Exception e) {
@@ -112,7 +117,7 @@ public class CryptoBrokerNavigationViewPainter implements NavigationViewPainter 
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inScaled = true;
             options.inSampleSize = 5;
-            drawable = BitmapFactory.decodeResource(activity.get().getResources(), R.drawable.cbw_navigation_drawer_background, options);
+            drawable = BitmapFactory.decodeResource(getContext().getResources(), R.drawable.cbw_navigation_drawer_background, options);
         } catch (OutOfMemoryError error) {
             error.printStackTrace();
         }
@@ -141,16 +146,30 @@ public class CryptoBrokerNavigationViewPainter implements NavigationViewPainter 
 
     private List<NavViewFooterItem> getStockData() {
         List<NavViewFooterItem> stockItems = new ArrayList<>();
+        List<Currency> merchandises = new ArrayList<>();
 
         try {
-            List<CryptoBrokerWalletAssociatedSetting> associatedWallets = moduleManager.getCryptoBrokerWalletAssociatedSettings(session.getAppPublicKey());
             numberFormat = DecimalFormat.getInstance();
 
-            for (CryptoBrokerWalletAssociatedSetting associatedWallet : associatedWallets) {
-                Currency currency = associatedWallet.getMerchandise();
-                float balance = moduleManager.getAvailableBalance(currency, session.getAppPublicKey());
 
-                stockItems.add(new NavViewFooterItem(currency.getFriendlyName(), numberFormat.format(balance)));
+            //Get a list of merchandises
+            List<CryptoBrokerWalletAssociatedSetting> associatedWallets = moduleManager.getCryptoBrokerWalletAssociatedSettings(session.getAppPublicKey());
+            for (CryptoBrokerWalletAssociatedSetting associatedWallet : associatedWallets) {
+
+                if (!merchandises.contains(associatedWallet.getMerchandise()))
+                    merchandises.add(associatedWallet.getMerchandise());
+            }
+
+
+            //Iterate through them and get their balances and friendly names
+            for (Currency merchandise : merchandises) {
+                double balance = moduleManager.getAvailableBalance(merchandise, session.getAppPublicKey());
+
+                //If Bitcoin, convert to satoshi
+                if (CurrencyTypes.CRYPTO.equals(merchandise.getType()) && CryptoCurrency.BITCOIN.equals(merchandise))
+                    balance = BitcoinConverter.convert(balance, BitcoinConverter.Currency.SATOSHI, BitcoinConverter.Currency.BITCOIN);
+
+                stockItems.add(new NavViewFooterItem(merchandise.getFriendlyName(), numberFormat.format(balance)));
             }
 
         } catch (Exception ex) {
@@ -169,17 +188,23 @@ public class CryptoBrokerNavigationViewPainter implements NavigationViewPainter 
         try {
             final List<EarningsPair> earningsPairs = moduleManager.getEarningsPairs(session.getAppPublicKey());
             for (EarningsPair earningsPair : earningsPairs) {
-                final String linkedCurrency = earningsPair.getLinkedCurrency().getCode();
-                final String earningCurrency = earningsPair.getEarningCurrency().getCode();
+                final Currency linkedCurrency = earningsPair.getLinkedCurrency();
+                final String linkedCurrencyCode = linkedCurrency.getCode();
 
-                String currencies = linkedCurrency + " / " + earningCurrency;
+                final Currency earningCurrency = earningsPair.getEarningCurrency();
+                final String earningCurrencyCode = earningCurrency.getCode();
+
+                String currencies = linkedCurrencyCode + " / " + earningCurrencyCode;
                 String value = "0.0";
 
-                final EarningsSearch search = earningsPair.getSearch();
-
-                final List<EarningsDetailData> earningsDetails = EarningsDetailData.generateEarningsDetailData(search.listResults(), TimeFrequency.DAILY);
+                final List<EarningTransaction> earnings = moduleManager.searchEarnings(earningsPair);
+                final List<EarningsDetailData> earningsDetails = EarningsDetailData.generateEarningsDetailData(earnings, TimeFrequency.DAILY);
                 if (!earningsDetails.isEmpty()) {
-                    final double amount = earningsDetails.get(0).getAmount();
+                    double amount = earningsDetails.get(0).getAmount();
+
+                    if (earningCurrency.getType() == CurrencyTypes.CRYPTO && CryptoCurrency.BITCOIN.getCode().equals(earningCurrencyCode))
+                        amount = BitcoinConverter.convert(amount, BitcoinConverter.Currency.SATOSHI, BitcoinConverter.Currency.BITCOIN);
+
                     value = numberFormat.format(amount);
                 }
 
@@ -194,5 +219,12 @@ public class CryptoBrokerNavigationViewPainter implements NavigationViewPainter 
         }
 
         return earningsItems;
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        //TODO: acá des registrá tu receiver
+        //unregisterReceiver();
     }
 }

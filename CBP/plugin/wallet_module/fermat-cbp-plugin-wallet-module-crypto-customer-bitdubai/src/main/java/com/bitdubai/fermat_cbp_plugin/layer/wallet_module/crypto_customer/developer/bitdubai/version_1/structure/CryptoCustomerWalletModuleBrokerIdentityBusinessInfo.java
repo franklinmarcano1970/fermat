@@ -1,23 +1,23 @@
 package com.bitdubai.fermat_cbp_plugin.layer.wallet_module.crypto_customer.developer.bitdubai.version_1.structure;
 
+import com.bitdubai.fermat_api.layer.all_definition.enums.GeoFrequency;
 import com.bitdubai.fermat_api.layer.all_definition.enums.interfaces.FermatEnum;
 import com.bitdubai.fermat_api.layer.world.interfaces.Currency;
 import com.bitdubai.fermat_cbp_api.all_definition.exceptions.CantCreateMessageSignatureException;
 import com.bitdubai.fermat_cbp_api.all_definition.identity.ActorIdentity;
-import com.bitdubai.fermat_cbp_api.layer.actor.crypto_customer.interfaces.ActorExtraData;
-import com.bitdubai.fermat_cbp_api.layer.actor.crypto_customer.interfaces.QuotesExtraData;
 import com.bitdubai.fermat_cbp_api.layer.identity.crypto_broker.ExposureLevel;
+import com.bitdubai.fermat_cbp_api.layer.identity.crypto_broker.interfaces.CryptoBrokerIdentityExtraData;
 import com.bitdubai.fermat_cbp_api.layer.wallet_module.common.interfaces.MerchandiseExchangeRate;
 import com.bitdubai.fermat_cbp_api.layer.wallet_module.crypto_customer.interfaces.BrokerIdentityBusinessInfo;
 
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
  * Created by nelson on 24/11/15.
  */
-public class CryptoCustomerWalletModuleBrokerIdentityBusinessInfo implements BrokerIdentityBusinessInfo {
+public class CryptoCustomerWalletModuleBrokerIdentityBusinessInfo implements BrokerIdentityBusinessInfo, Serializable {
 
     private String publicKey;
     private String alias;
@@ -64,7 +64,7 @@ public class CryptoCustomerWalletModuleBrokerIdentityBusinessInfo implements Bro
     }
 
     @Override
-    public List<MerchandiseExchangeRate>  getQuotes() {
+    public List<MerchandiseExchangeRate> getQuotes() {
         return quotes;
     }
 
@@ -85,6 +85,22 @@ public class CryptoCustomerWalletModuleBrokerIdentityBusinessInfo implements Bro
 
     @Override
     public String createMessageSignature(String message) throws CantCreateMessageSignatureException {
+        return null;
+    }
+
+    @Override
+    public long getAccuracy() {
+        return 0;
+    }
+
+    @Override
+    public GeoFrequency getFrequency() {
+        return null;
+    }
+
+    @Override
+    public CryptoBrokerIdentityExtraData getCryptoBrokerIdentityExtraData() {
+        //TODO: only for compilation
         return null;
     }
 }

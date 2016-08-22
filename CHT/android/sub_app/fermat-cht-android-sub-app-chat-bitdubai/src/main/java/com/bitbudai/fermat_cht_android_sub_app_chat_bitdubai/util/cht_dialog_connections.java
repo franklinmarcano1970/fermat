@@ -15,25 +15,26 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.FermatSession;
+import com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.sessions.ChatSessionReferenceApp;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.layer.definition.wallet.views.FermatButton;
 import com.bitdubai.fermat_android_api.layer.definition.wallet.views.FermatTextView;
 import com.bitdubai.fermat_android_api.ui.dialogs.FermatDialog;
 import com.bitdubai.fermat_android_api.ui.interfaces.FermatWorkerCallBack;
 import com.bitdubai.fermat_android_api.ui.util.FermatWorker;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedSubAppExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.settings.structure.SettingsManager;
 import com.bitdubai.fermat_api.layer.dmp_engine.sub_app_runtime.enums.SubApps;
+import com.bitdubai.fermat_cht_android_sub_app_chat_bitdubai.R;
 import com.bitdubai.fermat_cht_api.layer.middleware.interfaces.ContactConnection;
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.ChatManager;
 import com.bitdubai.fermat_cht_api.layer.sup_app_module.interfaces.ChatModuleManager;
 import com.bitdubai.fermat_pip_api.layer.network_service.subapp_resources.SubAppResourcesProviderManager;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedSubAppExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
+
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.List;
-import com.bitdubai.fermat_cht_android_sub_app_chat_bitdubai.R;
-
 import java.util.UUID;
 
 
@@ -41,7 +42,8 @@ import java.util.UUID;
  * Created by Lozadaa on 05/03/16.
  * Updated by Jose Cardozo josejcb (josejcb89@gmail.com) on 16/03/16.
  */
-public class cht_dialog_connections extends FermatDialog<FermatSession, SubAppResourcesProviderManager> implements View.OnClickListener {
+public class cht_dialog_connections extends FermatDialog<ReferenceAppFermatSession, SubAppResourcesProviderManager>
+        implements View.OnClickListener {
 
     private final Activity activity;
     private static final String TAG = "cht_dialog_connections";
@@ -50,23 +52,24 @@ public class cht_dialog_connections extends FermatDialog<FermatSession, SubAppRe
     private ChatModuleManager moduleManager;
     private ErrorManager errorManager;
     private SettingsManager<com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.settings.ChatSettings> settingsManager;
-    private com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.sessions.ChatSession chatSession;
+    private ChatSessionReferenceApp chatSession;
     public List<ContactConnection> contacts;
-    ArrayList<String> contactname=new ArrayList<String>();
-    ArrayList<Bitmap> contacticon=new ArrayList<>();
-    ArrayList<UUID> contactid=new ArrayList<UUID>();
+    ArrayList<String> contactname = new ArrayList<String>();
+    ArrayList<Bitmap> contacticon = new ArrayList<>();
+    ArrayList<UUID> contactid = new ArrayList<UUID>();
     private List<ContactConnection> contactConnectionList;
     Boolean act_vista = false;
     ListView list;
     private AdapterCallbackContacts mAdapterCallback;
-    FermatTextView txt_title,txt_body;
+    FermatTextView txt_title, txt_body;
     TextView text;
-    FermatButton btn_yes,btn_no;
+    FermatButton btn_yes, btn_no;
     Button btn_add, btn_cancel;
     com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.adapters.DialogConnectionListAdapter adapter;
-    public cht_dialog_connections(Activity activity, FermatSession fermatSession, SubAppResourcesProviderManager resources,
+
+    public cht_dialog_connections(Activity activity, ReferenceAppFermatSession referenceAppFermatSession, SubAppResourcesProviderManager resources,
                                   ChatManager chatManager, AdapterCallbackContacts mAdapterCallback) {
-        super(activity, fermatSession, null);
+        super(activity, referenceAppFermatSession, null);
         this.activity = activity;
         this.chatManager = chatManager;
         this.mAdapterCallback = mAdapterCallback;
@@ -79,18 +82,17 @@ public class cht_dialog_connections extends FermatDialog<FermatSession, SubAppRe
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        try{
-            chatSession=((com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.sessions.ChatSession) getSession());
-            chatManager= chatSession.getModuleManager();
+        try {
+            chatSession = ((ChatSessionReferenceApp) getSession());
+            chatManager = chatSession.getModuleManager();
             //chatManager=moduleManager.getChatManager();
-            errorManager=getSession().getErrorManager();
+            errorManager = getSession().getErrorManager();
 
-        }catch (Exception e)
-        {
-            if(errorManager!=null)
-                errorManager.reportUnexpectedSubAppException(SubApps.CHT_CHAT,UnexpectedSubAppExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT,e);
+        } catch (Exception e) {
+            if (errorManager != null)
+                errorManager.reportUnexpectedSubAppException(SubApps.CHT_CHAT, UnexpectedSubAppExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
         }
-        text=(TextView) findViewById(R.id.text);
+        text = (TextView) findViewById(R.id.text);
         list = (ListView) findViewById(R.id.list);
 
         setUpListeners();
@@ -98,8 +100,8 @@ public class cht_dialog_connections extends FermatDialog<FermatSession, SubAppRe
         try {
             //final ProgressDialog progressDialog = new ProgressDialog(getActivity());
             //progressDialog.setMessage("Please wait");
-           // progressDialog.setCancelable(false);
-           // progressDialog.show();
+            // progressDialog.setCancelable(false);
+            // progressDialog.show();
             text.setText("Please wait...");
             FermatWorker worker = new FermatWorker() {
                 @Override
@@ -171,10 +173,10 @@ public class cht_dialog_connections extends FermatDialog<FermatSession, SubAppRe
 ////                                                    }
 ////                                                }
 //                                                //chatManager.deleteContact(contactexist);
-//                                                getSession().setData(com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.sessions.ChatSession.CONTACTTOUPDATE_DATA, null);
+//                                                getSession().setData(com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.sessions.ChatSessionReferenceApp.CONTACTTOUPDATE_DATA, null);
 //                                                getSession().setData("whocallme", "contact");
 //                                                //TODO:Cardozo revisar esta logica ya no aplica, esto viene de un metodo nuevo que lo buscara del module del actor connections//chatManager.getChatUserIdentities();
-//                                                getSession().setData(com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.sessions.ChatSession.CONTACT_DATA, null);//chatManager.getContactByContactId(contactidnew));
+//                                                getSession().setData(com.bitbudai.fermat_cht_android_sub_app_chat_bitdubai.sessions.ChatSessionReferenceApp.CONTACT_DATA, null);//chatManager.getContactByContactId(contactidnew));
 //                                                Toast.makeText(getActivity(), "Connection added as Contact", Toast.LENGTH_SHORT).show();
 //                                                //changeActivity(Activities.CHT_CHAT_OPEN_MESSAGE_LIST, getSession().getAppPublicKey());
 //                                                dismiss();
@@ -261,23 +263,23 @@ public class cht_dialog_connections extends FermatDialog<FermatSession, SubAppRe
                 }
             });
             worker.execute();
-        }catch (Exception e){
+        } catch (Exception e) {
             if (errorManager != null)
                 errorManager.reportUnexpectedSubAppException(SubApps.CHT_CHAT, UnexpectedSubAppExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
         }
     }
 
-    public boolean getAct(){
+    public boolean getAct() {
         return act_vista;
-        }
+    }
 
     protected int setLayoutId() {
-            return R.layout.cht_dialog_connections;
+        return R.layout.cht_dialog_connections;
     }
 
     private void setUpListeners() {
-      //  btn_add.setOnClickListener(this);
-        }
+        //  btn_add.setOnClickListener(this);
+    }
 
     public void onClick(View v) {
         int id = v.getId();
@@ -285,6 +287,7 @@ public class cht_dialog_connections extends FermatDialog<FermatSession, SubAppRe
             dismiss();
         }*/
     }
+
     @Override
     protected int setWindowFeature() {
         return Window.FEATURE_NO_TITLE;
@@ -298,7 +301,7 @@ public class cht_dialog_connections extends FermatDialog<FermatSession, SubAppRe
             List<ContactConnection> result = null;//chatManager.discoverActorsRegistered();//moduleManager.listWorldCryptoBrokers(moduleManager.getSelectedActorIdentity(), MAX, offset);
             dataSet.addAll(result);
             //offset = dataSet.size();
-        }catch (Exception e) {
+        } catch (Exception e) {
             errorManager.reportUnexpectedSubAppException(SubApps.CHT_CHAT, UnexpectedSubAppExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
         }
 
@@ -321,12 +324,12 @@ public class cht_dialog_connections extends FermatDialog<FermatSession, SubAppRe
 //        Animation anim = AnimationUtils.loadAnimation(getActivity(),
 //                show ? android.R.anim.fade_in : android.R.anim.fade_out);
 //        if (show &&
-//                (emptyView.getVisibility() == View.GONE || emptyView.getVisibility() == View.INVISIBLE)) {
+//                (emptyView.getShowAsAction() == View.GONE || emptyView.getShowAsAction() == View.INVISIBLE)) {
 //            emptyView.setAnimation(anim);
 //            emptyView.setVisibility(View.VISIBLE);
 //            if (adapter != null)
 //                adapter.refreshEvents(null, null, null);
-//        } else if (!show && emptyView.getVisibility() == View.VISIBLE) {
+//        } else if (!show && emptyView.getShowAsAction() == View.VISIBLE) {
 //            emptyView.setAnimation(anim);
 //            emptyView.setVisibility(View.GONE);
 //        }

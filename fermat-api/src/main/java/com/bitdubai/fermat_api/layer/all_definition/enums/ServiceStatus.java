@@ -14,9 +14,7 @@ public enum ServiceStatus implements FermatEnum {
     STOPPED("STOPPED"),
 
     STARTING("STARTING"),
-    ERROR("ERROR"),
-
-    ;
+    ERROR("ERROR"),;
 
     public String code;
 
@@ -32,13 +30,19 @@ public enum ServiceStatus implements FermatEnum {
 
         switch (code) {
 
-            case "CREATED": return CREATED;
-            case "STARTED": return STARTED;
-            case "PAUSED":  return PAUSED;
-            case "STOPPED": return STOPPED;
-            
-            case "ERROR":   return ERROR;
-            case "STARTING":return STARTING;
+            case "CREATED":
+                return CREATED;
+            case "STARTED":
+                return STARTED;
+            case "PAUSED":
+                return PAUSED;
+            case "STOPPED":
+                return STOPPED;
+
+            case "ERROR":
+                return ERROR;
+            case "STARTING":
+                return STARTING;
 
             default:
                 throw new InvalidParameterException(

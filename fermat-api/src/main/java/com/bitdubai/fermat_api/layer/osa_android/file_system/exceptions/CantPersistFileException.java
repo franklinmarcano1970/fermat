@@ -6,16 +6,18 @@ package com.bitdubai.fermat_api.layer.osa_android.file_system.exceptions;
 public class CantPersistFileException extends FileSystemException {
 
     /**
-	 * 
-	 */
-	private static final long serialVersionUID = 4841032427648911456L;
+     *
+     */
+    private static final long serialVersionUID = 4841032427648911456L;
 
     public static final String DEFAULT_MESSAGE = "CAN'T PERSIST FILE";
 
-    //private final String fileName;
-
     public CantPersistFileException(final String message, final Exception cause, final String context, final String possibleReason) {
         super(message, cause, context, possibleReason);
+    }
+
+    public CantPersistFileException(final String context, final String possibleReason) {
+        super(DEFAULT_MESSAGE, null, context, possibleReason);
     }
 
     public CantPersistFileException(final String message, final Exception cause) {
@@ -23,7 +25,7 @@ public class CantPersistFileException extends FileSystemException {
     }
 
     public CantPersistFileException(final String message) {
-        this(message, null);
+        this(message, null, null, null);
     }
 
     public CantPersistFileException(final Exception exception) {

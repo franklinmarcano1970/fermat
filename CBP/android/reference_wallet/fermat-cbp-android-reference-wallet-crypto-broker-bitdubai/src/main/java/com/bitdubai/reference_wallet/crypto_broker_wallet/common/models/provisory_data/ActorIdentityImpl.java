@@ -1,10 +1,14 @@
 package com.bitdubai.reference_wallet.crypto_broker_wallet.common.models.provisory_data;
 
 
+import com.bitdubai.fermat_api.layer.all_definition.enums.GeoFrequency;
 import com.bitdubai.fermat_cbp_api.all_definition.identity.ActorIdentity;
 import com.bitdubai.fermat_cbp_api.layer.identity.crypto_broker.ExposureLevel;
 
-public class ActorIdentityImpl implements ActorIdentity {
+import java.io.Serializable;
+
+
+public class ActorIdentityImpl implements ActorIdentity, Serializable {
 
     private String alias;
     private byte[] img;
@@ -46,6 +50,16 @@ public class ActorIdentityImpl implements ActorIdentity {
 
     @Override
     public String createMessageSignature(String message) {
+        return null;
+    }
+
+    @Override
+    public long getAccuracy() {
+        return 0;
+    }
+
+    @Override
+    public GeoFrequency getFrequency() {
         return null;
     }
 }

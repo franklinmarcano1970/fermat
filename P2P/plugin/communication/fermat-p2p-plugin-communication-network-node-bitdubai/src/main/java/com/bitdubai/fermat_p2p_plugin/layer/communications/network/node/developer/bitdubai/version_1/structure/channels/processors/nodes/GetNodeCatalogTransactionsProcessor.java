@@ -1,6 +1,5 @@
 package com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.channels.processors.nodes;
 
-import com.bitdubai.fermat_p2p_api.layer.all_definition.common.network_services.template.exceptions.CantReadRecordDataBaseException;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.commons.data.Package;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.HeadersAttName;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.MessageContentType;
@@ -10,7 +9,9 @@ import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.develope
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.data.node.request.GetNodeCatalogTransactionsMsjRequest;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.data.node.respond.GetNodeCatalogTransactionsMsjRespond;
 import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.entities.NodesCatalogTransaction;
+import com.bitdubai.fermat_p2p_plugin.layer.communications.network.node.developer.bitdubai.version_1.structure.exceptions.CantReadRecordDataBaseException;
 
+import org.apache.commons.lang.ClassUtils;
 import org.jboss.logging.Logger;
 
 import java.util.List;
@@ -23,14 +24,14 @@ import javax.websocket.Session;
  * Created by Roberto Requena - (rart3001@gmail.com) on 04/04/16.
  *
  * @version 1.0
- * @since Java JDK 1.7
+ * @since   Java JDK 1.7
  */
 public class GetNodeCatalogTransactionsProcessor extends PackageProcessor {
 
     /**
      * Represent the LOG
      */
-    private final Logger LOG = Logger.getLogger(GetNodeCatalogTransactionsProcessor.class.getName());
+    private final Logger LOG = Logger.getLogger(ClassUtils.getShortClassName(GetNodeCatalogTransactionsProcessor.class));
 
     /**
      * Constructor with parameter
@@ -69,7 +70,6 @@ public class GetNodeCatalogTransactionsProcessor extends PackageProcessor {
              */
             if (messageContent.getMessageContentType() == MessageContentType.OBJECT){
 
-
                 nodesCatalogTransactionList = loadData(messageContent.getOffset(), messageContent.getMax());
 
                 Long count = getDaoFactory().getNodesCatalogTransactionDao().getAllCount();
@@ -78,7 +78,7 @@ public class GetNodeCatalogTransactionsProcessor extends PackageProcessor {
                  * If all ok, respond whit success message
                  */
                 getNodeCatalogTransactionsMsjRespond = new GetNodeCatalogTransactionsMsjRespond(GetNodeCatalogTransactionsMsjRespond.STATUS.SUCCESS, GetNodeCatalogTransactionsMsjRespond.STATUS.SUCCESS.toString(), nodesCatalogTransactionList, count);
-                Package packageRespond = Package.createInstance(getNodeCatalogTransactionsMsjRespond.toJson(), packageReceived.getNetworkServiceTypeSource(), PackageType.GET_NODE_CATALOG_TRANSACTIONS_RESPOND, channelIdentityPrivateKey, destinationIdentityPublicKey);
+                Package packageRespond = Package.createInstance(getNodeCatalogTransactionsMsjRespond.toJson(), packageReceived.getNetworkServiceTypeSource(), PackageType.GET_NODE_CATALOG_TRANSACTIONS_RESPONSE, channelIdentityPrivateKey, destinationIdentityPublicKey);
 
                 /*
                  * Send the respond
@@ -86,7 +86,6 @@ public class GetNodeCatalogTransactionsProcessor extends PackageProcessor {
                 session.getAsyncRemote().sendObject(packageRespond);
 
             }
-
 
         } catch (Exception exception){
 
@@ -98,7 +97,7 @@ public class GetNodeCatalogTransactionsProcessor extends PackageProcessor {
                  * Respond whit fail message
                  */
                 getNodeCatalogTransactionsMsjRespond = new GetNodeCatalogTransactionsMsjRespond(GetNodeCatalogTransactionsMsjRespond.STATUS.FAIL, exception.getLocalizedMessage(), nodesCatalogTransactionList, new Long(0));
-                Package packageRespond = Package.createInstance(getNodeCatalogTransactionsMsjRespond.toJson(), packageReceived.getNetworkServiceTypeSource(), PackageType.GET_NODE_CATALOG_TRANSACTIONS_RESPOND, channelIdentityPrivateKey, destinationIdentityPublicKey);
+                Package packageRespond = Package.createInstance(getNodeCatalogTransactionsMsjRespond.toJson(), packageReceived.getNetworkServiceTypeSource(), PackageType.GET_NODE_CATALOG_TRANSACTIONS_RESPONSE, channelIdentityPrivateKey, destinationIdentityPublicKey);
 
                 /*
                  * Send the respond
@@ -108,9 +107,7 @@ public class GetNodeCatalogTransactionsProcessor extends PackageProcessor {
             } catch (Exception e) {
                 LOG.error(e.getMessage());
             }
-
         }
-
     }
 
     /**
@@ -124,17 +121,19 @@ public class GetNodeCatalogTransactionsProcessor extends PackageProcessor {
 
         List<NodesCatalogTransaction> nodesCatalogTransactionList = null;
 
+        LOG.info("offset = "+offset);
+        LOG.info("max = "+max);
+
         if (offset > 0 && max > 0){
 
             nodesCatalogTransactionList = getDaoFactory().getNodesCatalogTransactionDao().findAll(offset, max);
 
-        }else {
+        } else {
 
             nodesCatalogTransactionList = getDaoFactory().getNodesCatalogTransactionDao().findAll();
 
         }
 
         return nodesCatalogTransactionList;
-
     }
 }

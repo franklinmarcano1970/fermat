@@ -40,12 +40,13 @@
                 android:textAllCaps="true"
                 android:textColor="#1271A7"
                 android:textSize="14sp"
-                tools:text="Amount to Buy"/>
+                tools:text="@string/amount_buy"/>
 
             <View
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#1271A7"/>
+                android:background="#1271A7"
+                android:id="@+id/cbw_line_up" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -61,7 +62,7 @@
                     android:layout_marginEnd="5dp"
                     android:layout_marginRight="5dp"
                     android:textSize="14sp"
-                    android:text="Buying"
+                    android:text="@string/buy"
                     android:textColor="@color/description_text_status_confirm"/>
 
                 <com.bitdubai.fermat_android_api.layer.definition.wallet.views.FermatButton
@@ -101,7 +102,8 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#1271A7"/>
+                    android:background="#1271A7"
+                    android:id="@+id/cbw_line_down" />
 
                 <com.bitdubai.fermat_android_api.layer.definition.wallet.views.FermatButton
                     android:id="@+id/cbw_confirm_button"

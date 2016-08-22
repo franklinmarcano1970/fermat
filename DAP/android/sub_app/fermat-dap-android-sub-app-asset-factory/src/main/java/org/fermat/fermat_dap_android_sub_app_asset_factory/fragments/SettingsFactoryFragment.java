@@ -16,36 +16,32 @@ import android.view.Window;
 import android.widget.Toast;
 
 import com.bitdubai.fermat_android_api.layer.definition.wallet.AbstractFermatFragment;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.layer.definition.wallet.views.FermatTextView;
 import com.bitdubai.fermat_android_api.ui.Views.PresentationDialog;
 import com.bitdubai.fermat_api.FermatException;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedUIExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.enums.UISource;
 import com.bitdubai.fermat_api.layer.all_definition.navigation_structure.enums.Activities;
-import com.bitdubai.fermat_api.layer.all_definition.settings.structure.SettingsManager;
+import com.bitdubai.fermat_api.layer.pip_engine.interfaces.ResourceProviderManager;
 import com.bitdubai.fermat_dap_android_sub_app_asset_factory_bitdubai.R;
-import org.fermat.fermat_dap_android_sub_app_asset_factory.sessions.AssetFactorySession;
-import org.fermat.fermat_dap_android_sub_app_asset_factory.sessions.SessionConstantsAssetFactory;
-import org.fermat.fermat_dap_api.layer.dap_module.asset_factory.AssetFactorySettings;
+
 import org.fermat.fermat_dap_api.layer.dap_module.asset_factory.interfaces.AssetFactoryModuleManager;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedUIExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 
 import static android.widget.Toast.makeText;
 
 /**
  * Created by Nerio on 01/02/16.
  */
-public class SettingsFactoryFragment extends AbstractFermatFragment implements View.OnClickListener {
+public class SettingsFactoryFragment extends AbstractFermatFragment<ReferenceAppFermatSession<AssetFactoryModuleManager>, ResourceProviderManager> implements View.OnClickListener {
 
     private View rootView;
-
     private FermatTextView networkAction;
     private FermatTextView notificationAction;
-
     // Fermat Managers
-    private AssetFactoryModuleManager manager;
+    private AssetFactoryModuleManager moduleManager;
     private ErrorManager errorManager;
-    SettingsManager<AssetFactorySettings> settingsManager;
 
     public static SettingsFactoryFragment newInstance() {
         return new SettingsFactoryFragment();
@@ -56,10 +52,9 @@ public class SettingsFactoryFragment extends AbstractFermatFragment implements V
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
 
-        manager = ((AssetFactorySession) appSession).getModuleManager();
-//        try {
-            errorManager = appSession.getErrorManager();
-            settingsManager = appSession.getModuleManager().getSettingsManager();
+        moduleManager = appSession.getModuleManager();
+        errorManager = appSession.getErrorManager();
+
 //            getActivity().getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
 //        } catch (CantGetCryptoWalletException e) {
 //            referenceWalletSession.getErrorManager().reportUnexpectedWalletException(Wallets.CWP_WALLET_RUNTIME_WALLET_BITCOIN_WALLET_ALL_BITDUBAI, UnexpectedWalletExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_FRAGMENT, e);
@@ -76,7 +71,7 @@ public class SettingsFactoryFragment extends AbstractFermatFragment implements V
             setUpUI();
             setUpActions();
             setUpUIData();
-            configureToolbar();
+//            configureToolbar();
 
             return rootView;
         } catch (Exception e) {
@@ -90,7 +85,7 @@ public class SettingsFactoryFragment extends AbstractFermatFragment implements V
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void setUpUI() { //throws CantGetActiveLoginIdentityException {
         networkAction = (FermatTextView) rootView.findViewById(R.id.dap_wallet_asset_issuer_network_action);
-        notificationAction = (FermatTextView) rootView.findViewById(R.id.dap_wallet_asset_issuer_notification_action);
+//        notificationAction = (FermatTextView) rootView.findViewById(R.id.dap_wallet_asset_issuer_notification_action);
     }
 
     private void setUpActions() {
@@ -100,12 +95,12 @@ public class SettingsFactoryFragment extends AbstractFermatFragment implements V
                 changeActivity(Activities.DAP_SUB_APP_ASSET_FACTORY_SETTINGS_NETWORK_MAIN, appSession.getAppPublicKey());
             }
         });
-        notificationAction.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                changeActivity(Activities.DAP_SUB_APP_ASSET_FACTORY_SETTINGS_NOTIFICATIONS, appSession.getAppPublicKey());
-            }
-        });
+//        notificationAction.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                changeActivity(Activities.DAP_SUB_APP_ASSET_FACTORY_SETTINGS_NOTIFICATIONS, appSession.getAppPublicKey());
+//            }
+//        });
     }
 
     private void setUpUIData() {
@@ -123,20 +118,31 @@ public class SettingsFactoryFragment extends AbstractFermatFragment implements V
     }
 
     @Override
-    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-        super.onCreateOptionsMenu(menu, inflater);
-        menu.add(0, SessionConstantsAssetFactory.IC_ACTION_SETTINGS, 0, "help").setIcon(R.drawable.dap_asset_factory_help_icon)
-                .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);    }
+    public void onOptionMenuPrepared(Menu menu){
+        super.onOptionMenuPrepared(menu);
+//        menu.add(0, SessionConstantsAssetFactory.IC_ACTION_SETTINGS, 0, "help").setIcon(R.drawable.dap_asset_factory_help_icon)
+//                .setShowAsAction(MenuItem.SHOW_AS_ACTION_WITH_TEXT);
+    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         try {
             int id = item.getItemId();
 
-            if (id == SessionConstantsAssetFactory.IC_ACTION_SETTINGS) {
-                setUpFactorySettings(settingsManager.loadAndGetSettings(appSession.getAppPublicKey()).isPresentationHelpEnabled());
-                return true;
+            switch (id) {
+                //case IC_ACTION_SETTINGS:
+                case 2:
+                    setUpFactorySettings(moduleManager.loadAndGetSettings(appSession.getAppPublicKey()).isPresentationHelpEnabled());
+                    break;
+//                case 1:
+//                    changeActivity(Activities.CHT_CHAT_GEOLOCATION_IDENTITY, appSession.getAppPublicKey());
+//                    break;
             }
+
+//            if (id == SessionConstantsAssetFactory.IC_ACTION_SETTINGS) {
+//                setUpFactorySettings(moduleManager.loadAndGetSettings(appSession.getAppPublicKey()).isPresentationHelpEnabled());
+//                return true;
+//            }
 
         } catch (Exception e) {
             errorManager.reportUnexpectedUIException(UISource.ACTIVITY, UnexpectedUIExceptionSeverity.UNSTABLE, FermatException.wrapException(e));
@@ -152,7 +158,6 @@ public class SettingsFactoryFragment extends AbstractFermatFragment implements V
                     .setBannerRes(R.drawable.banner_asset_factory)
                     .setIconRes(R.drawable.asset_factory)
                     .setVIewColor(R.color.dap_asset_factory_view_color)
-                    .setTitleTextColor(R.color.dap_asset_factory_view_color)
                     .setSubTitle(R.string.dap_asset_factory_editor_subTitle)
                     .setBody(R.string.dap_asset_factory_editor_body)
                     .setTemplateType(PresentationDialog.TemplateType.TYPE_PRESENTATION_WITHOUT_IDENTITIES)
@@ -166,13 +171,14 @@ public class SettingsFactoryFragment extends AbstractFermatFragment implements V
     }
 
     private void configureToolbar() {
-        Toolbar toolbar = getPaintActivtyFeactures().getToolbar();
+        Toolbar toolbar = getToolbar();
         if (toolbar != null) {
-            toolbar.setBackgroundColor(Color.parseColor("#1d1d25"));
+            toolbar.setBackgroundColor(getResources().getColor(R.color.redeem_home_bar_color));
             toolbar.setTitleTextColor(Color.WHITE);
+            toolbar.setBottom(Color.WHITE);
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
                 Window window = getActivity().getWindow();
-                window.setStatusBarColor(Color.parseColor("#1d1d25"));
+                window.setStatusBarColor(getResources().getColor(R.color.redeem_home_bar_color));
             }
         }
     }

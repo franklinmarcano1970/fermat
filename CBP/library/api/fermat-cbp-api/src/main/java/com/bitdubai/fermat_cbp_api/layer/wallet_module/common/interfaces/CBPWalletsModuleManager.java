@@ -1,5 +1,6 @@
 package com.bitdubai.fermat_cbp_api.layer.wallet_module.common.interfaces;
 
+import com.bitdubai.fermat_api.layer.modules.ModuleSettingsImpl;
 import com.bitdubai.fermat_api.layer.modules.common_classes.ActiveActorIdentityInformation;
 import com.bitdubai.fermat_api.layer.modules.interfaces.FermatSettings;
 import com.bitdubai.fermat_api.layer.modules.interfaces.ModuleManager;
@@ -20,13 +21,15 @@ import com.bitdubai.fermat_cbp_api.layer.wallet_module.common.exceptions.CantGet
 import com.bitdubai.fermat_cbp_api.layer.wallet_module.common.exceptions.CantGetNegotiationsWaitingForCustomerException;
 import com.bitdubai.fermat_cbp_api.layer.wallet_module.common.exceptions.CouldNotCancelNegotiationException;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.UUID;
 
 /**
  * Created by nelson on 21/11/15.
  */
-public interface CBPWalletsModuleManager<T extends FermatSettings, S extends ActiveActorIdentityInformation> extends ModuleManager<T, S> {
+public interface CBPWalletsModuleManager<T extends FermatSettings, S extends ActiveActorIdentityInformation>
+        extends ModuleManager<T, S>, ModuleSettingsImpl<T>, Serializable {
 
     /**
      * Cancel a current negotiation
@@ -70,7 +73,7 @@ public interface CBPWalletsModuleManager<T extends FermatSettings, S extends Act
     /**
      * Returns a Collection of the clauses of a negotiation, as per given by the customerBrokerPurchaseNegotiationManager
      *
-     * @param negotiationId  the ID of the negotiation
+     * @param negotiationId the ID of the negotiation
      */
     Collection<Clause> getNegotiationClausesFromNegotiationId(UUID negotiationId) throws CantGetListClauseException;
 
@@ -103,7 +106,6 @@ public interface CBPWalletsModuleManager<T extends FermatSettings, S extends Act
     CustomerBrokerNegotiationInformation getNegotiationInformation(UUID negotiationID) throws CantGetNegotiationInformationException;
 
     /**
-     *
      * @return Collection<NegotiationLocations>
      */
     Collection<NegotiationLocations> getAllLocations(NegotiationType negotiationType) throws CantGetListLocationsSaleException, CantGetListLocationsPurchaseException;

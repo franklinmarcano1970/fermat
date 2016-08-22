@@ -4,6 +4,7 @@ import com.bitdubai.fermat_api.layer.all_definition.crypto.asymmetric.Asymmetric
 import com.bitdubai.fermat_api.layer.all_definition.network_service.enums.NetworkServiceType;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.PackageType;
 
+import java.io.Serializable;
 import java.security.InvalidParameterException;
 
 /**
@@ -16,7 +17,7 @@ import java.security.InvalidParameterException;
  * @version 1.0
  * @since Java JDK 1.7
  */
-public class Package {
+public class Package implements Serializable {
 
     /**
      * Represent the content value
@@ -34,6 +35,11 @@ public class Package {
     private NetworkServiceType networkServiceTypeSource;
 
     /**
+     * Represent the destinationPublicKey
+     */
+    private String destinationPublicKey;
+
+    /**
      * Represent the signature value
      */
     private String signature;
@@ -48,10 +54,11 @@ public class Package {
      *
      * @throws InvalidParameterException if the parameters are bad.
      */
-    private Package(final String             content                 ,
-                    final NetworkServiceType networkServiceTypeSource,
-                    final PackageType        packageType             ,
-                    final String             signature               ) {
+    protected Package(final String             content                 ,
+                      final NetworkServiceType networkServiceTypeSource,
+                      final PackageType        packageType             ,
+                      final String             signature               ,
+                      final String             destinationPublicKey    ) {
 
         if (content == null)
             throw new InvalidParameterException("Content can't be null.");
@@ -69,6 +76,7 @@ public class Package {
         this.networkServiceTypeSource = networkServiceTypeSource;
         this.packageType              = packageType             ;
         this.signature                = signature               ;
+        this.destinationPublicKey     = destinationPublicKey    ;
     }
 
     /**
@@ -108,6 +116,22 @@ public class Package {
     }
 
     /**
+     * Set the ClientDestination
+     * @param destinationPublicKey
+     */
+    protected void setDestinationPublicKey(String destinationPublicKey) {
+        this.destinationPublicKey = destinationPublicKey;
+    }
+
+    /**
+     * Get the ClientDestination
+     * @return String
+     */
+    public String getDestinationPublicKey() {
+        return destinationPublicKey;
+    }
+
+    /**
      * Construct a package instance encrypted with the destination identity public key and signed
      * whit the private key passed as an argument
      *
@@ -125,6 +149,7 @@ public class Package {
                                          final String             senderPrivateKey            ,
                                          final String             destinationIdentityPublicKey) {
 
+
         String messageHash = AsymmetricCryptography.encryptMessagePublicKey(
                 content,
                 destinationIdentityPublicKey
@@ -136,10 +161,11 @@ public class Package {
         );
 
         return new Package(
-                content                 ,
-                networkServiceTypeSource,
-                packageType             ,
-                signature
+                content                     ,
+                networkServiceTypeSource    ,
+                packageType                 ,
+                signature                   ,
+                destinationIdentityPublicKey
         );
     }
 }

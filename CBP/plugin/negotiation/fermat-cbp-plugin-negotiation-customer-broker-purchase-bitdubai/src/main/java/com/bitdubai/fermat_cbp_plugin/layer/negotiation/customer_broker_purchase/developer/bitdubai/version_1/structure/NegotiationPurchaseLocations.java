@@ -2,18 +2,19 @@ package com.bitdubai.fermat_cbp_plugin.layer.negotiation.customer_broker_purchas
 
 import com.bitdubai.fermat_cbp_api.all_definition.negotiation.NegotiationLocations;
 
+import java.io.Serializable;
 import java.util.UUID;
 
 /**
  * Created by angel on 07/12/15.
  */
-public class NegotiationPurchaseLocations implements NegotiationLocations {
+public class NegotiationPurchaseLocations implements NegotiationLocations, Serializable {
 
     private final UUID locationId;
     private final String location;
     private final String uri;
 
-    public NegotiationPurchaseLocations(UUID locationId, String location, String uri){
+    public NegotiationPurchaseLocations(UUID locationId, String location, String uri) {
         this.locationId = locationId;
         this.location = location;
         this.uri = uri;

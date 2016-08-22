@@ -1,7 +1,6 @@
 package com.bitdubai.fermat_cht_api.layer.middleware.utils;
 
 import com.bitdubai.fermat_api.layer.all_definition.components.enums.PlatformComponentType;
-import com.bitdubai.fermat_cht_api.all_definition.enums.ContactStatus;
 import com.bitdubai.fermat_cht_api.layer.middleware.interfaces.Contact;
 
 import java.util.UUID;
@@ -18,9 +17,10 @@ public class ContactImpl implements Contact {
     private String remoteActorPublicKey;
     private long creationDate;
     private byte[] image;
-    private ContactStatus contactStatus;
+    private String contactStatus;
 
-    public ContactImpl(){}
+    public ContactImpl() {
+    }
 
     public ContactImpl(UUID contactId,
                        String remoteName,
@@ -29,16 +29,15 @@ public class ContactImpl implements Contact {
                        String remoteActorPublicKey,
                        long creationDate,
                        byte[] image,
-                       ContactStatus contactStatus)
-    {
-        this.contactId            = contactId;
-        this.remoteName           = remoteName;
-        this.alias                = alias;
-        this.remoteActorType      = remoteActorType;
+                       String contactStatus) {
+        this.contactId = contactId;
+        this.remoteName = remoteName;
+        this.alias = alias;
+        this.remoteActorType = remoteActorType;
         this.remoteActorPublicKey = remoteActorPublicKey;
-        this.creationDate         = creationDate;
-        this.image                = image;
-        this.contactStatus        = contactStatus;
+        this.creationDate = creationDate;
+        this.image = image;
+        this.contactStatus = contactStatus;
     }
 
     @Override
@@ -112,25 +111,17 @@ public class ContactImpl implements Contact {
     }
 
     @Override
-    public ContactStatus getContactStatus() {
+    public String getContactStatus() {
         return contactStatus;
     }
 
     @Override
-    public void setContactStatus(ContactStatus contactStatus) {
+    public void setContactStatus(String contactStatus) {
         this.contactStatus = contactStatus;
     }
 
     @Override
     public String toString() {
-        return "ContactImpl{" +
-                "contactId=" + contactId +
-                ", remoteName='" + remoteName + '\'' +
-                ", alias='" + alias + '\'' +
-                ", remoteActorType=" + remoteActorType +
-                ", remoteActorPublicKey='" + remoteActorPublicKey + '\'' +
-                ", creationDate=" + creationDate + '\'' +
-                ", contactStatus=" + contactStatus +
-                '}';
+        return "ContactImpl{" + "contactId=" + contactId + ", remoteName='" + remoteName + '\'' + ", alias='" + alias + '\'' + ", remoteActorType=" + remoteActorType + ", remoteActorPublicKey='" + remoteActorPublicKey + '\'' + ", creationDate=" + creationDate + '\'' + ", contactStatus=" + contactStatus + '}';
     }
 }

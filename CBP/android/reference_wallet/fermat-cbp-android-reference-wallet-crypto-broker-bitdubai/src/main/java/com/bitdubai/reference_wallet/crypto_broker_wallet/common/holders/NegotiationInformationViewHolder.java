@@ -16,9 +16,18 @@ import com.bitdubai.fermat_cbp_api.all_definition.identity.ActorIdentity;
 import com.bitdubai.fermat_cbp_api.layer.wallet_module.common.interfaces.CustomerBrokerNegotiationInformation;
 import com.bitdubai.reference_wallet.crypto_broker_wallet.R;
 
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.Map;
 
-import static com.bitdubai.fermat_cbp_api.all_definition.enums.NegotiationStatus.*;
+import static com.bitdubai.fermat_cbp_api.all_definition.enums.NegotiationStatus.CLOSED;
+import static com.bitdubai.fermat_cbp_api.all_definition.enums.NegotiationStatus.SENT_TO_BROKER;
+import static com.bitdubai.fermat_cbp_api.all_definition.enums.NegotiationStatus.SENT_TO_CUSTOMER;
+import static com.bitdubai.fermat_cbp_api.all_definition.enums.NegotiationStatus.WAITING_FOR_BROKER;
+import static com.bitdubai.fermat_cbp_api.all_definition.enums.NegotiationStatus.WAITING_FOR_CLOSING;
+import static com.bitdubai.fermat_cbp_api.all_definition.enums.NegotiationStatus.WAITING_FOR_CUSTOMER;
 
 
 /**
@@ -27,18 +36,14 @@ import static com.bitdubai.fermat_cbp_api.all_definition.enums.NegotiationStatus
 public class NegotiationInformationViewHolder extends ChildViewHolder {
     public final ImageView customerImage;
     public final FermatTextView customerName;
-    public final FermatTextView merchandiseAmount;
-    public final FermatTextView merchandiseUnit;
-    public final FermatTextView merchandise;
-    public final FermatTextView paymentMethod;
-    public final FermatTextView exchangeRateAmount;
-    public final FermatTextView paymentCurrency;
+    public final FermatTextView exchangeRateUnit;
+    public final FermatTextView buyingText;
     public final FermatTextView lastUpdateDate;
     public final FermatTextView status;
     public final ProgressBar sendingProgressBar;
     private Resources res;
     private View itemView;
-
+    NumberFormat numberFormat = DecimalFormat.getInstance();
 
     /**
      * Public constructor for the custom child ViewHolder
@@ -51,17 +56,13 @@ public class NegotiationInformationViewHolder extends ChildViewHolder {
         this.itemView = itemView;
         res = itemView.getResources();
 
+        sendingProgressBar = (ProgressBar) itemView.findViewById(R.id.cbw_sending_progress_bar);
+        status = (FermatTextView) itemView.findViewById(R.id.cbw_negotiation_status);
         customerImage = (ImageView) itemView.findViewById(R.id.cbw_customer_image);
         customerName = (FermatTextView) itemView.findViewById(R.id.cbw_customer_name);
-        merchandiseAmount = (FermatTextView) itemView.findViewById(R.id.cbw_merchandise_amount);
-        merchandise = (FermatTextView) itemView.findViewById(R.id.cbw_merchandise);
-        merchandiseUnit = (FermatTextView) itemView.findViewById(R.id.cbw_merchandise_unit);
-        paymentMethod = (FermatTextView) itemView.findViewById(R.id.cbw_type_of_payment);
-        exchangeRateAmount = (FermatTextView) itemView.findViewById(R.id.cbw_exchange_rate_amount);
-        paymentCurrency = (FermatTextView) itemView.findViewById(R.id.cbw_payment_currency);
         lastUpdateDate = (FermatTextView) itemView.findViewById(R.id.cbw_update_date);
-        status = (FermatTextView) itemView.findViewById(R.id.cbw_negotiation_status);
-        sendingProgressBar = (ProgressBar) itemView.findViewById(R.id.cbw_sending_progress_bar);
+        exchangeRateUnit = (FermatTextView) itemView.findViewById(R.id.cbw_merchandise_unit);
+        buyingText = (FermatTextView) itemView.findViewById(R.id.cbw_buying_text);
     }
 
     public void bind(CustomerBrokerNegotiationInformation itemInfo) {
@@ -81,12 +82,19 @@ public class NegotiationInformationViewHolder extends ChildViewHolder {
         sendingProgressBar.setVisibility(visibility);
 
         Map<ClauseType, String> negotiationSummary = itemInfo.getNegotiationSummary();
-        merchandiseAmount.setText(negotiationSummary.get(ClauseType.CUSTOMER_CURRENCY_QUANTITY));
-        exchangeRateAmount.setText(negotiationSummary.get(ClauseType.EXCHANGE_RATE));
-        merchandise.setText(negotiationSummary.get(ClauseType.CUSTOMER_CURRENCY));
-        merchandiseUnit.setText(negotiationSummary.get(ClauseType.CUSTOMER_CURRENCY));
-        paymentMethod.setText(negotiationSummary.get(ClauseType.BROKER_PAYMENT_METHOD));
-        paymentCurrency.setText(negotiationSummary.get(ClauseType.BROKER_CURRENCY));
+
+        String merchandise = negotiationSummary.get(ClauseType.CUSTOMER_CURRENCY);
+
+
+        String exchangeRate = fixFormat(negotiationSummary.get(ClauseType.EXCHANGE_RATE));
+
+        String paymentCurrency = negotiationSummary.get(ClauseType.BROKER_CURRENCY);
+
+        String merchandiseAmount = fixFormat(negotiationSummary.get(ClauseType.CUSTOMER_CURRENCY_QUANTITY));
+
+
+        exchangeRateUnit.setText(String.format("1 %1$s @ %2$s %3$s", merchandise, exchangeRate, paymentCurrency));
+        buyingText.setText(String.format("Buying %1$s %2$s", merchandiseAmount, merchandise));
     }
 
     private int getStatusBackgroundColor(NegotiationStatus status) {
@@ -95,6 +103,9 @@ public class NegotiationInformationViewHolder extends ChildViewHolder {
 
         if (status == WAITING_FOR_CUSTOMER || status == SENT_TO_CUSTOMER)
             return res.getColor(R.color.waiting_for_customer_list_item_background);
+
+        if (status == WAITING_FOR_CLOSING)
+            return res.getColor(R.color.waiting_for_closing_list_item_background);
 
         if (status == CLOSED)
             return res.getColor(R.color.negotiation_closed_list_item_background);
@@ -109,6 +120,9 @@ public class NegotiationInformationViewHolder extends ChildViewHolder {
         if (status == WAITING_FOR_CUSTOMER)
             return R.string.waiting_for_the_customer;
 
+        if (status == WAITING_FOR_CLOSING)
+            return R.string.waiting_for_closing;
+
         return R.string.sending_to_the_customer;
     }
 
@@ -118,4 +132,34 @@ public class NegotiationInformationViewHolder extends ChildViewHolder {
 
         return ImagesUtils.getRoundedBitmap(res, R.drawable.person);
     }
+
+    private String fixFormat(String value) {
+
+        if (compareLessThan1(value)) {
+            numberFormat.setMaximumFractionDigits(8);
+        } else {
+            numberFormat.setMaximumFractionDigits(2);
+        }
+        return numberFormat.format(new BigDecimal(Double.valueOf(value)));
+
+
+    }
+
+    private Boolean compareLessThan1(String value) {
+        Boolean lessThan1 = true;
+        Double valueToConvert;
+
+        valueToConvert=Double.valueOf(value);
+
+        if (BigDecimal.valueOf(valueToConvert).
+                compareTo(BigDecimal.ONE) == -1) {
+            lessThan1 = true;
+        } else {
+            lessThan1 = false;
+        }
+
+        return lessThan1;
+    }
+
+
 }

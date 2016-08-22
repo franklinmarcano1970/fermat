@@ -16,7 +16,7 @@ import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.enums.P2pE
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.events.VPNConnectionCloseNotificationEvent;
 import com.bitdubai.fermat_p2p_api.layer.all_definition.communication.events.VPNConnectionLooseNotificationEvent;
 import com.bitdubai.fermat_p2p_plugin.layer.ws.communications.cloud.client.developer.bitdubai.version_1.structure.tyrus.conf.CloudClientVpnConfigurator;
-import com.bitdubai.fermat_pip_api.layer.platform_service.event_manager.interfaces.EventManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.EventManager;
 
 import org.glassfish.tyrus.client.ClientManager;
 
@@ -218,7 +218,7 @@ public class WsCommunicationTyrusVPNClientManagerAgent{
 
         try {
 
-            System.out.println("WsCommunicationVPNClientManagerAgent - closeAllVpnConnections()");
+            System.out.println("WsCommunicationTyrusVPNClientManagerAgent - closeAllVpnConnections() -- Calling wsCommunicationVPNClient.close().");
 
             if (!instance.vpnClientActiveCache.isEmpty()) {
 

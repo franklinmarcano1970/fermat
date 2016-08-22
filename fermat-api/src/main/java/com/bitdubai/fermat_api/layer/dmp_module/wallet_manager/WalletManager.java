@@ -1,25 +1,29 @@
 package com.bitdubai.fermat_api.layer.dmp_module.wallet_manager;
 
+import com.bitdubai.fermat_api.layer.all_definition.enums.BlockchainNetworkType;
 import com.bitdubai.fermat_api.layer.all_definition.exceptions.InvalidParameterException;
 import com.bitdubai.fermat_api.layer.dmp_middleware.wallet_manager.CantCreateNewWalletException;
 import com.bitdubai.fermat_api.layer.dmp_module.AppManager;
+import com.bitdubai.fermat_api.layer.dmp_module.DesktopManagerSettings;
 import com.bitdubai.fermat_api.layer.dmp_module.wallet_manager.structure.WalletManagerModuleInstalledWallet;
+import com.bitdubai.fermat_api.layer.modules.ModuleSettingsImpl;
 
 import java.util.List;
 
 /**
  * Created by ciencias on 25.01.15.
  */
-public interface WalletManager extends AppManager {
+public interface WalletManager extends AppManager, ModuleSettingsImpl<DesktopManagerSettings> {
 
 
-    void loadUserWallets (String deviceUserPublicKey) throws CantLoadWalletsException;
+    void loadUserWallets(String deviceUserPublicKey) throws CantLoadWalletsException;
 
-    void createDefaultWallets (String deviceUserPublicKey) throws CantCreateDefaultWalletsException;
-    
+    void createDefaultWallets(String deviceUserPublicKey) throws CantCreateDefaultWalletsException;
+
     void enableWallet() throws CantEnableWalletException;
 
     WalletManagerModuleInstalledWallet getInstalledWallet(String walletPublicKey) throws CantCreateNewWalletException;
+
     InstalledWallet getInstalledWalletFromPlatformIdentifier(String platformIdentifier) throws CantCreateNewWalletException, InvalidParameterException;
 
     /**
@@ -31,15 +35,25 @@ public interface WalletManager extends AppManager {
      * @throws WalletCreateNewIntraUserIdentityException
      */
 
-     void createNewIntraWalletUser(String alias, String phrase, byte[] profileImage) throws WalletCreateNewIntraUserIdentityException;
+    void createNewIntraWalletUser(String alias, String phrase, byte[] profileImage) throws WalletCreateNewIntraUserIdentityException;
 
 
     /**
      * This method returns if exists a Intra User Identity
+     *
      * @return
      * @throws CantGetIfIntraWalletUsersExistsException
      */
     boolean hasIntraUserIdentity() throws CantGetIfIntraWalletUsersExistsException;
 
-    List<InstalledWallet> getInstalledWallets()throws Exception;
+    List<InstalledWallet> getInstalledWallets() throws Exception;
+
+
+    List<String> getMnemonicCode() throws Exception;
+
+    String getMnemonicPhrase() throws Exception;
+
+    long getCreationTimeSeconds() throws Exception;
+
+    public void importMnemonicCode(List<String> mnemonicCode,long date,BlockchainNetworkType blockchainNetworkType) throws Exception;
 }

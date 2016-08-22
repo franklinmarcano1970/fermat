@@ -1,19 +1,20 @@
 package org.fermat.fermat_dap_api.layer.dap_identity.redeem_point.interfaces;
 
-import com.bitdubai.fermat_api.layer.modules.common_classes.ActiveActorIdentityInformation;
-import com.bitdubai.fermat_api.layer.modules.interfaces.FermatSettings;
-import com.bitdubai.fermat_api.layer.modules.interfaces.ModuleManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.FermatManager;
+
 import org.fermat.fermat_dap_api.layer.dap_identity.redeem_point.exceptions.CantCreateNewRedeemPointException;
 import org.fermat.fermat_dap_api.layer.dap_identity.redeem_point.exceptions.CantGetRedeemPointIdentitiesException;
 import org.fermat.fermat_dap_api.layer.dap_identity.redeem_point.exceptions.CantListAssetRedeemPointException;
 import org.fermat.fermat_dap_api.layer.dap_identity.redeem_point.exceptions.CantUpdateIdentityRedeemPointException;
+import com.bitdubai.fermat_api.layer.all_definition.enums.GeoFrequency;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * Created by Nerio on 07/09/15.
  */
-public interface RedeemPointIdentityManager extends ModuleManager<FermatSettings, ActiveActorIdentityInformation> {
+public interface RedeemPointIdentityManager extends FermatManager, Serializable {
 
     /**
      * The method <code>getAllIntraWalletUsersFromCurrentDeviceUser</code> will give us a list of all the intra wallet users associated to the actual Device User logged in
@@ -41,12 +42,14 @@ public interface RedeemPointIdentityManager extends ModuleManager<FermatSettings
      * @throws CantCreateNewRedeemPointException if something goes wrong.
      */
     RedeemPointIdentity createNewRedeemPoint(String alias,
-                                             byte[] profileImage) throws CantCreateNewRedeemPointException;
+                                             byte[] profileImage, int accuracy, GeoFrequency frequency) throws CantCreateNewRedeemPointException;
 
 
     RedeemPointIdentity createNewRedeemPoint(String alias, byte[] profileImage,
                                              String contactInformation, String countryName, String provinceName, String cityName,
-                                             String postalCode, String streetName, String houseNumber) throws CantCreateNewRedeemPointException;
+                                             String postalCode, String streetName, String houseNumber,
+                                             int accuracy,
+                                             GeoFrequency frequency) throws CantCreateNewRedeemPointException;
 
     /**
      * The method <code>updateIdentityAssetIssuer</code> change a identity information data
@@ -58,7 +61,9 @@ public interface RedeemPointIdentityManager extends ModuleManager<FermatSettings
      */
     void updateIdentityRedeemPoint(String identityPublicKey, String identityAlias, byte[] profileImage,
                                    String contactInformation, String countryName, String provinceName, String cityName,
-                                   String postalCode, String streetName, String houseNumber) throws CantUpdateIdentityRedeemPointException;
+                                   String postalCode, String streetName, String houseNumber,
+                                   int accuracy,
+                                   GeoFrequency frequency) throws CantUpdateIdentityRedeemPointException;
 
     /**
      * The method <code>hasAssetUserIdentity</code> returns if has a intra user identity created
@@ -69,7 +74,11 @@ public interface RedeemPointIdentityManager extends ModuleManager<FermatSettings
     boolean hasRedeemPointIdentity() throws CantListAssetRedeemPointException;
 
 
-    void createIdentity(String name, byte[] profile_img,
-                        String contactInformation, String countryName, String provinceName, String cityName,
-                        String postalCode, String streetName, String houseNumber) throws Exception;
+//    void createIdentity(String name, byte[] profile_img,
+//                        String contactInformation, String countryName, String provinceName, String cityName,
+//                        String postalCode, String streetName, String houseNumber) throws Exception;
+
+    int getAccuracyDataDefault();
+
+    GeoFrequency getFrequencyDataDefault();
 }

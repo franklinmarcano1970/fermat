@@ -16,6 +16,9 @@ import com.bitdubai.fermat_cbp_api.all_definition.identity.ActorIdentity;
 import com.bitdubai.fermat_cbp_api.layer.wallet_module.common.interfaces.CustomerBrokerNegotiationInformation;
 import com.bitdubai.reference_wallet.crypto_customer_wallet.R;
 
+import java.math.BigDecimal;
+import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.util.Map;
 
 import static com.bitdubai.fermat_cbp_api.all_definition.enums.NegotiationStatus.SENT_TO_BROKER;
@@ -23,20 +26,20 @@ import static com.bitdubai.fermat_cbp_api.all_definition.enums.NegotiationStatus
 
 /**
  * Created by nelson on 28/10/15.
+ *
  */
 public class NegotiationInformationViewHolder extends ChildViewHolder {
     public final ImageView brokerImage;
     public final FermatTextView brokerName;
-    public final FermatTextView merchandiseAmount;
-    public final FermatTextView merchandise;
+    public final FermatTextView sellingText;
     public final FermatTextView paymentMethod;
-    public final FermatTextView exchangeRateAmount;
-    public final FermatTextView paymentCurrency;
     public final FermatTextView lastUpdateDate;
     public final FermatTextView status;
     public final ProgressBar sendingProgressBar;
+    private final FermatTextView exchangeRateUnit;
     private final Resources res;
     private final View itemView;
+    private NumberFormat numberFormat = DecimalFormat.getInstance();
 
 
     /**
@@ -52,14 +55,12 @@ public class NegotiationInformationViewHolder extends ChildViewHolder {
 
         brokerImage = (ImageView) itemView.findViewById(R.id.ccw_broker_image);
         brokerName = (FermatTextView) itemView.findViewById(R.id.ccw_broker_name);
-        merchandiseAmount = (FermatTextView) itemView.findViewById(R.id.ccw_merchandise_amount);
-        merchandise = (FermatTextView) itemView.findViewById(R.id.ccw_merchandise);
+        sellingText = (FermatTextView) itemView.findViewById(R.id.ccw_selling_text);
         paymentMethod = (FermatTextView) itemView.findViewById(R.id.ccw_type_of_payment);
-        exchangeRateAmount = (FermatTextView) itemView.findViewById(R.id.ccw_exchange_rate_amount);
-        paymentCurrency = (FermatTextView) itemView.findViewById(R.id.ccw_payment_currency);
         lastUpdateDate = (FermatTextView) itemView.findViewById(R.id.ccw_update_date);
         status = (FermatTextView) itemView.findViewById(R.id.ccw_negotiation_status);
         sendingProgressBar = (ProgressBar) itemView.findViewById(R.id.ccw_sending_progress_bar);
+        exchangeRateUnit = (FermatTextView) itemView.findViewById(R.id.ccw_merchandise_unit);
     }
 
     public void bind(CustomerBrokerNegotiationInformation itemInfo) {
@@ -73,6 +74,7 @@ public class NegotiationInformationViewHolder extends ChildViewHolder {
         brokerName.setText(broker.getAlias());
 
         NegotiationStatus negotiationStatus = itemInfo.getStatus();
+
         itemView.setBackgroundColor(getStatusBackgroundColor(negotiationStatus));
         status.setText(getStatusStringRes(negotiationStatus));
 
@@ -80,11 +82,16 @@ public class NegotiationInformationViewHolder extends ChildViewHolder {
         sendingProgressBar.setVisibility(visibility);
 
         Map<ClauseType, String> negotiationSummary = itemInfo.getNegotiationSummary();
-        merchandiseAmount.setText(negotiationSummary.get(ClauseType.CUSTOMER_CURRENCY_QUANTITY));
-        exchangeRateAmount.setText(negotiationSummary.get(ClauseType.EXCHANGE_RATE));
-        merchandise.setText(negotiationSummary.get(ClauseType.CUSTOMER_CURRENCY));
+        String exchangeRate = negotiationSummary.get(ClauseType.EXCHANGE_RATE);
+        String merchandise = negotiationSummary.get(ClauseType.CUSTOMER_CURRENCY);
+        String paymentCurrency = negotiationSummary.get(ClauseType.BROKER_CURRENCY);
+        String merchandiseAmount = negotiationSummary.get(ClauseType.CUSTOMER_CURRENCY_QUANTITY);
+
+        exchangeRateUnit.setText(res.getString(R.string.ccw_exchange_rate_summary, merchandise, fixFormat(exchangeRate), paymentCurrency));
+        sellingText.setText(res.getString(R.string.ccw_selling_details, fixFormat(merchandiseAmount), merchandise));
     }
 
+    @SuppressWarnings("deprecation")
     private int getStatusBackgroundColor(NegotiationStatus status) {
         if (status == NegotiationStatus.WAITING_FOR_CUSTOMER || status == NegotiationStatus.SENT_TO_CUSTOMER)
             return res.getColor(R.color.waiting_for_customer_list_item_background);
@@ -92,10 +99,14 @@ public class NegotiationInformationViewHolder extends ChildViewHolder {
         if (status == NegotiationStatus.WAITING_FOR_BROKER || status == NegotiationStatus.SENT_TO_BROKER)
             return res.getColor(R.color.waiting_for_broker_list_item_background);
 
+        if (status == NegotiationStatus.WAITING_FOR_CLOSING)
+            return res.getColor(R.color.waiting_for_closing_list_item_background);
+
         if (status == NegotiationStatus.CLOSED)
             return res.getColor(R.color.negotiation_closed_list_item_background);
 
         return res.getColor(R.color.negotiation_cancelled_list_item_background);
+
     }
 
     protected int getStatusStringRes(NegotiationStatus status) {
@@ -105,6 +116,9 @@ public class NegotiationInformationViewHolder extends ChildViewHolder {
         if (status == NegotiationStatus.WAITING_FOR_BROKER)
             return R.string.waiting_for_broker;
 
+        if (status == NegotiationStatus.WAITING_FOR_CLOSING)
+            return R.string.waiting_for_closing;
+
         return R.string.sending_to_the_broker;
     }
 
@@ -113,5 +127,16 @@ public class NegotiationInformationViewHolder extends ChildViewHolder {
             return ImagesUtils.getRoundedBitmap(res, customerImg);
 
         return ImagesUtils.getRoundedBitmap(res, R.drawable.person);
+    }
+
+
+    private String fixFormat(String value) {
+        numberFormat.setMaximumFractionDigits(compareLessThan1(value) ? 8 : 2);
+        return numberFormat.format(new BigDecimal(Double.valueOf(value)));
+    }
+
+    private Boolean compareLessThan1(String value) {
+        Double valueToConvert = Double.valueOf(value);
+        return BigDecimal.valueOf(valueToConvert).compareTo(BigDecimal.ONE) == -1;
     }
 }

@@ -10,7 +10,7 @@ import com.bitdubai.fermat_android_api.engine.NotificationPainter;
  * @author Jose Cardozo josejcb (josejcb89@gmail.com) on 13/04/16.
  * @version 1.0
  */
-public class ChatCommunityNotificationPainter implements NotificationPainter {
+public class ChatCommunityNotificationPainter extends NotificationPainter {
 
     private String title;
     private String textBody;
@@ -19,14 +19,11 @@ public class ChatCommunityNotificationPainter implements NotificationPainter {
 
     //constructor
 
-    public ChatCommunityNotificationPainter(String title, String textBody, String image, String viewCode)
-    {
-        this.title    = title;
+    public ChatCommunityNotificationPainter(String title, String textBody, String image, String viewCode) {
+        this.title = title;
         this.textBody = textBody;
-        this.image    = image;
+        this.image = image;
         remoteViews = null;
-
-
     }
 
     @Override

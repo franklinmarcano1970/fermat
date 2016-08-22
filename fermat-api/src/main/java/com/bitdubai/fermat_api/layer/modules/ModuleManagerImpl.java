@@ -23,13 +23,15 @@ public class ModuleManagerImpl<Z extends FermatSettings> {
         this.pluginId = pluginId;
     }
 
+
     /**
      * Through the method <code>getSettingsManager</code> we can get a settings manager for the specified
      * settings class parametrized.
      *
      * @return a new instance of the settings manager for the specified fermat settings object.
      */
-    public final SettingsManager<Z> getSettingsManager(){
+    @Deprecated
+    public final SettingsManager<Z> getSettingsManager() {
         if (this.settingsManager != null)
             return this.settingsManager;
 
@@ -41,5 +43,12 @@ public class ModuleManagerImpl<Z extends FermatSettings> {
     }
 
 
+    public final void persistSettings(String publicKey, final Z settings) throws CantPersistSettingsException {
+        getSettingsManager().persistSettings(publicKey, settings);
+    }
+
+    public final Z loadAndGetSettings(String publicKey) throws CantGetSettingsException, SettingsNotFoundException {
+        return getSettingsManager().loadAndGetSettings(publicKey);
+    }
 
 }

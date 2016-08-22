@@ -15,9 +15,7 @@ public enum Developers implements FermatEnum {
     /**
      * To make the code more readable, please keep the elements in the Enum sorted alphabetically.
      */
-    BITDUBAI    ("BitDubai")
-
-    ;
+    BITDUBAI("BitDubai");
 
     private final String code;
 
@@ -28,7 +26,8 @@ public enum Developers implements FermatEnum {
     public static Developers getByCode(String code) throws InvalidParameterException {
 
         switch (code) {
-            case "BitDubai": return Developers.BITDUBAI;
+            case "BitDubai":
+                return Developers.BITDUBAI;
 
             default:
                 throw new InvalidParameterException(

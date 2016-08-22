@@ -6,33 +6,40 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import com.bitdubai.fermat_android_api.engine.FermatApplicationCaller;
 import com.bitdubai.fermat_android_api.engine.NavigationViewPainter;
+import com.bitdubai.fermat_android_api.layer.definition.wallet.interfaces.ReferenceAppFermatSession;
 import com.bitdubai.fermat_android_api.ui.adapters.FermatAdapter;
-import com.bitdubai.fermat_api.layer.modules.common_classes.ActiveActorIdentityInformation;
 import com.bitdubai.fermat_ccp_api.layer.module.intra_user.exceptions.CantGetActiveLoginIdentityException;
+import com.bitdubai.fermat_ccp_api.layer.module.intra_user.interfaces.IntraUserModuleManager;
 import com.bitdubai.sub_app.intra_user_community.adapters.AppNavigationAdapter;
 import com.bitdubai.sub_app.intra_user_community.common.utils.FragmentsCommons;
+
 
 import java.lang.ref.WeakReference;
 
 /**
  * Created by mati on 2015.12.24..
  */
-public class IntraUserCommunityNavigationViewPainter implements NavigationViewPainter {
+public class IntraUserCommunityNavigationViewPainter extends NavigationViewPainter {
+    
+   // private final ActiveActorIdentityInformation intraUserLoginIdentity;
+    private WeakReference<FermatApplicationCaller> applicationsHelper;
+    private ReferenceAppFermatSession<IntraUserModuleManager> intraUserSubAppSession;
 
-    private WeakReference<Context> activity;
-    private final ActiveActorIdentityInformation intraUserLoginIdentity;
-
-    public IntraUserCommunityNavigationViewPainter(Context activity,ActiveActorIdentityInformation intraUserLoginIdentity) {
-        this.activity = new WeakReference(activity);
-        this.intraUserLoginIdentity = intraUserLoginIdentity;
+    public IntraUserCommunityNavigationViewPainter(Context activity,ReferenceAppFermatSession intraUserSubAppSession,FermatApplicationCaller applicationsHelper) {
+        super(activity);
+        this.intraUserSubAppSession = intraUserSubAppSession;
+        this.applicationsHelper = new WeakReference<FermatApplicationCaller>(applicationsHelper);
     }
 
     @Override
-    public View addNavigationViewHeader(ActiveActorIdentityInformation intraUserLoginIdentity) {
+    public View addNavigationViewHeader() {
         try {
-            return FragmentsCommons.setUpHeaderScreen((LayoutInflater) activity.get()
-                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE), activity.get(), intraUserLoginIdentity);
+
+            return FragmentsCommons.setUpHeaderScreen((LayoutInflater) getContext()
+                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE), getContext(), intraUserSubAppSession,applicationsHelper.get());
         } catch (CantGetActiveLoginIdentityException e) {
             e.printStackTrace();
             return null;
@@ -41,7 +48,7 @@ public class IntraUserCommunityNavigationViewPainter implements NavigationViewPa
 
     @Override
     public FermatAdapter addNavigationViewAdapter() {
-        return new AppNavigationAdapter(activity.get(), null);
+        return new AppNavigationAdapter(getContext(), null);
     }
 
     @Override

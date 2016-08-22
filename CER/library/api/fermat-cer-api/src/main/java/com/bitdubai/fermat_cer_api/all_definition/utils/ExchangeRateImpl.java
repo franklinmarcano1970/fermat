@@ -4,12 +4,12 @@ package com.bitdubai.fermat_cer_api.all_definition.utils;
 import com.bitdubai.fermat_api.layer.world.interfaces.Currency;
 import com.bitdubai.fermat_cer_api.all_definition.interfaces.ExchangeRate;
 
-import java.util.UUID;
+import java.io.Serializable;
 
 /**
  * Created by Alejandro Bicelis on 12/7/2015.
  */
-public class ExchangeRateImpl implements ExchangeRate {
+public class ExchangeRateImpl implements ExchangeRate, Serializable {
 
     private Currency fromCurrency;
     private Currency toCurrency;

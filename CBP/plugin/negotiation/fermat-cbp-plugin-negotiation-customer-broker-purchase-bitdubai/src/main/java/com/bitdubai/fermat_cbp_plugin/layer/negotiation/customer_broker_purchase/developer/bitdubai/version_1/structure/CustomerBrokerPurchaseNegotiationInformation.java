@@ -4,20 +4,21 @@ import com.bitdubai.fermat_cbp_api.all_definition.enums.NegotiationStatus;
 import com.bitdubai.fermat_cbp_api.all_definition.negotiation.Clause;
 import com.bitdubai.fermat_cbp_api.layer.negotiation.customer_broker_purchase.interfaces.CustomerBrokerPurchaseNegotiation;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.UUID;
 
 /**
- *  Created by angel on 19/10/15.
+ * Created by angel on 19/10/15.
  */
 
-public class CustomerBrokerPurchaseNegotiationInformation implements CustomerBrokerPurchaseNegotiation {
+public class CustomerBrokerPurchaseNegotiationInformation implements CustomerBrokerPurchaseNegotiation, Serializable {
 
-    private final UUID   negotiationId;
+    private final UUID negotiationId;
     private final String publicKeyCustomer;
     private final String publicKeyBroker;
-    private final Long   startDataTime;
-    private final Long   negotiationExpirationDate;
+    private final Long startDataTime;
+    private final Long negotiationExpirationDate;
     private NegotiationStatus statusNegotiation;
     private final Collection<Clause> clauses;
 
@@ -25,22 +26,22 @@ public class CustomerBrokerPurchaseNegotiationInformation implements CustomerBro
 
     private String cancelReason;
     private String memo;
-    private Long   lastNegotiationUpdateDate;
+    private Long lastNegotiationUpdateDate;
 
     public CustomerBrokerPurchaseNegotiationInformation(
-            UUID                negotiationId,
-            String              publicKeyCustomer,
-            String              publicKeyBroker,
-            Long                startDataTime,
-            Long                negotiationExpirationDate,
-            NegotiationStatus   statusNegotiation,
-            Collection<Clause>  clauses,
-            Boolean             nearExpirationDatetime,
+            UUID negotiationId,
+            String publicKeyCustomer,
+            String publicKeyBroker,
+            Long startDataTime,
+            Long negotiationExpirationDate,
+            NegotiationStatus statusNegotiation,
+            Collection<Clause> clauses,
+            Boolean nearExpirationDatetime,
 
-            String              memo,
-            String              cancelReason,
-            Long                lastNegotiationUpdateDate
-    ){
+            String memo,
+            String cancelReason,
+            Long lastNegotiationUpdateDate
+    ) {
         this.negotiationId = negotiationId;
         this.publicKeyCustomer = publicKeyCustomer;
         this.publicKeyBroker = publicKeyBroker;

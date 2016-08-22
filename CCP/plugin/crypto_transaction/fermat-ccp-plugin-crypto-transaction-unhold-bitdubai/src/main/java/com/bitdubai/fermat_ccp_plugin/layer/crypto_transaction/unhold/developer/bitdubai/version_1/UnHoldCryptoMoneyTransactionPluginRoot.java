@@ -28,7 +28,7 @@ import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.Cant
 import com.bitdubai.fermat_api.layer.osa_android.database_system.exceptions.DatabaseNotFoundException;
 import com.bitdubai.fermat_api.layer.osa_android.file_system.PluginFileSystem;
 import com.bitdubai.fermat_ccp_api.all_definition.enums.CryptoTransactionStatus;
-import com.bitdubai.fermat_ccp_api.layer.basic_wallet.bitcoin_wallet.interfaces.BitcoinWalletManager;
+import com.bitdubai.fermat_ccp_api.layer.basic_wallet.crypto_wallet.interfaces.CryptoWalletManager;
 import com.bitdubai.fermat_ccp_api.layer.crypto_transaction.unhold.exceptions.CantCreateUnHoldTransactionException;
 import com.bitdubai.fermat_ccp_api.layer.crypto_transaction.unhold.exceptions.CantGetUnHoldTransactionException;
 import com.bitdubai.fermat_ccp_api.layer.crypto_transaction.unhold.interfaces.CryptoUnholdTransaction;
@@ -41,13 +41,15 @@ import com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.unhold.developer.
 import com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.unhold.developer.bitdubai.version_1.exceptions.MissingUnHoldCryptoDataException;
 import com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.unhold.developer.bitdubai.version_1.structure.UnHoldCryptoMoneyTransactionManager;
 import com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.unhold.developer.bitdubai.version_1.structure.events.UnHoldCryptoMoneyTransactionMonitorAgent;
+import com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.unhold.developer.bitdubai.version_1.structure.events.UnHoldCryptoMoneyTransactionMonitorAgent2;
 import com.bitdubai.fermat_ccp_plugin.layer.crypto_transaction.unhold.developer.bitdubai.version_1.utils.UnHoldCryptoMoneyTransactionImpl;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
-import com.bitdubai.fermat_pip_api.layer.platform_service.event_manager.interfaces.EventManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.EventManager;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by franklin on 16/11/15.
@@ -75,8 +77,17 @@ public class UnHoldCryptoMoneyTransactionPluginRoot extends AbstractPlugin  impl
     private EventManager eventManager;
 
     @NeededPluginReference(platform = Platforms.CRYPTO_CURRENCY_PLATFORM, layer = Layers.BASIC_WALLET, plugin = Plugins.BITCOIN_WALLET)
-    BitcoinWalletManager bitcoinWalletManager;
+    CryptoWalletManager cryptoWalletManager;
 
+    /**
+     * Represents the plugin processor agent
+     */
+    UnHoldCryptoMoneyTransactionMonitorAgent2 processorAgent;
+
+    //Agent configuration
+    private final long SLEEP_TIME = 5000;
+    private final long DELAY_TIME = 500;
+    private final TimeUnit TIME_UNIT = TimeUnit.MILLISECONDS;
 
     @Override
     public void start() throws CantStartPluginException {
@@ -146,15 +157,27 @@ public class UnHoldCryptoMoneyTransactionPluginRoot extends AbstractPlugin  impl
      * @throws CantStartAgentException
      */
     private void startMonitorAgent() throws CantStartAgentException {
-        if(unHoldCryptoMoneyTransactionMonitorAgent == null) {
+        /*if(unHoldCryptoMoneyTransactionMonitorAgent == null) {
             unHoldCryptoMoneyTransactionMonitorAgent = new UnHoldCryptoMoneyTransactionMonitorAgent(
                     errorManager,
                     unHoldCryptoMoneyTransactionManager,
-                    bitcoinWalletManager
+                    cryptoWalletManager
             );
 
             unHoldCryptoMoneyTransactionMonitorAgent.start();
-        }else unHoldCryptoMoneyTransactionMonitorAgent.start();
+        }else unHoldCryptoMoneyTransactionMonitorAgent.start();*/
+        if(processorAgent == null) {
+            processorAgent = new UnHoldCryptoMoneyTransactionMonitorAgent2(
+                    SLEEP_TIME,
+                    TIME_UNIT,
+                    DELAY_TIME,
+                    this,
+                    unHoldCryptoMoneyTransactionManager,
+                    cryptoWalletManager
+            );
+
+            processorAgent.start();
+        }else processorAgent.start();
     }
 
 
@@ -172,6 +195,8 @@ public class UnHoldCryptoMoneyTransactionPluginRoot extends AbstractPlugin  impl
             unHoldCryptoMoneyTransaction.setCurrency(holdParameters.getCurrency());
             unHoldCryptoMoneyTransaction.setMemo(holdParameters.getMemo());
             unHoldCryptoMoneyTransaction.setBlockchainNetworkType(holdParameters.getBlockchainNetworkType());
+            unHoldCryptoMoneyTransaction.setFee(holdParameters.getFee());
+            unHoldCryptoMoneyTransaction.setFeeOrigin(holdParameters.getFeeOrigin());
             unHoldCryptoMoneyTransactionManager.saveUnHoldCryptoMoneyTransactionData(unHoldCryptoMoneyTransaction);
         } catch (DatabaseOperationException e) {
             errorManager.reportUnexpectedPluginException(this.getPluginVersionReference(), UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);

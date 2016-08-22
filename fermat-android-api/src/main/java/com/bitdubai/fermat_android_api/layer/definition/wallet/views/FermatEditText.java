@@ -9,7 +9,7 @@ import android.util.AttributeSet;
 import android.widget.EditText;
 
 import com.bitdubai.android_api.R;
-import com.bitdubai.fermat_android_api.layer.definition.wallet.enums.FontType;
+import com.bitdubai.fermat_api.layer.all_definition.enums.FontType;
 
 /**
  * Custom EditText with Fonts
@@ -51,7 +51,7 @@ public class FermatEditText extends EditText {
     public void parseAttributes(Context context, AttributeSet attrs) {
         TypedArray values = context.obtainStyledAttributes(attrs, R.styleable.FermatEditText);
         FontType typefaceType = FontType.values()
-                [values.getInt(R.styleable.FermatEditText_typeface, FontType.CAVIAR_DREAMS.ordinal())];
+                [values.getInt(R.styleable.FermatEditText_typeface, FontType.ROBOTO_REGULAR.ordinal())];
         setFont(typefaceType);
         values.recycle();
     }
@@ -70,5 +70,4 @@ public class FermatEditText extends EditText {
             ex.printStackTrace();
         }
     }
-
 }

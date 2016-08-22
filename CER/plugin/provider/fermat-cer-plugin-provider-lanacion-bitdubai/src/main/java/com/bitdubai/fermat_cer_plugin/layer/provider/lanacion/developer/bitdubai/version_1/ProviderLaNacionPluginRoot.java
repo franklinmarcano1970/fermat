@@ -4,6 +4,8 @@ import com.bitdubai.fermat_api.CantStartPluginException;
 import com.bitdubai.fermat_api.FermatException;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.abstract_classes.AbstractPlugin;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.annotations.NeededAddonReference;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.EventManager;
+import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
 import com.bitdubai.fermat_api.layer.all_definition.common.system.utils.PluginVersionReference;
 import com.bitdubai.fermat_api.layer.all_definition.developer.DatabaseManagerForDevelopers;
 import com.bitdubai.fermat_api.layer.all_definition.developer.DeveloperDatabase;
@@ -22,20 +24,17 @@ import com.bitdubai.fermat_api.layer.osa_android.database_system.PluginDatabaseS
 import com.bitdubai.fermat_api.layer.osa_android.file_system.PluginFileSystem;
 import com.bitdubai.fermat_cer_api.all_definition.interfaces.CurrencyPair;
 import com.bitdubai.fermat_cer_api.all_definition.interfaces.ExchangeRate;
+import com.bitdubai.fermat_cer_api.all_definition.utils.CurrencyPairImpl;
+import com.bitdubai.fermat_cer_api.all_definition.utils.ExchangeRateImpl;
 import com.bitdubai.fermat_cer_api.layer.provider.exceptions.CantGetExchangeRateException;
 import com.bitdubai.fermat_cer_api.layer.provider.exceptions.CantGetProviderInfoException;
 import com.bitdubai.fermat_cer_api.layer.provider.exceptions.CantSaveExchangeRateException;
 import com.bitdubai.fermat_cer_api.layer.provider.exceptions.UnsupportedCurrencyPairException;
 import com.bitdubai.fermat_cer_api.layer.provider.interfaces.CurrencyExchangeRateProviderManager;
+import com.bitdubai.fermat_cer_api.layer.provider.utils.HttpHelper;
 import com.bitdubai.fermat_cer_plugin.layer.provider.lanacion.developer.bitdubai.version_1.database.LaNacionProviderDao;
 import com.bitdubai.fermat_cer_plugin.layer.provider.lanacion.developer.bitdubai.version_1.database.LaNacionProviderDeveloperDatabaseFactory;
 import com.bitdubai.fermat_cer_plugin.layer.provider.lanacion.developer.bitdubai.version_1.exceptions.CantInitializeLaNacionProviderDatabaseException;
-import com.bitdubai.fermat_cer_api.all_definition.utils.CurrencyPairImpl;
-import com.bitdubai.fermat_cer_api.all_definition.utils.ExchangeRateImpl;
-import com.bitdubai.fermat_cer_api.layer.provider.utils.HttpReader;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.error_manager.enums.UnexpectedPluginExceptionSeverity;
-import com.bitdubai.fermat_api.layer.all_definition.common.system.interfaces.ErrorManager;
-import com.bitdubai.fermat_pip_api.layer.platform_service.event_manager.interfaces.EventManager;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -59,9 +58,6 @@ public class ProviderLaNacionPluginRoot extends AbstractPlugin implements Databa
 
     @NeededAddonReference(platform = Platforms.OPERATIVE_SYSTEM_API, layer = Layers.SYSTEM, addon = Addons.PLUGIN_FILE_SYSTEM)
     private PluginFileSystem pluginFileSystem;
-
-    @NeededAddonReference(platform = Platforms.PLUG_INS_PLATFORM, layer = Layers.PLATFORM_SERVICE, addon = Addons.ERROR_MANAGER)
-    private ErrorManager errorManager;
 
     @NeededAddonReference(platform = Platforms.PLUG_INS_PLATFORM, layer = Layers.PLATFORM_SERVICE, addon = Addons.EVENT_MANAGER)
     private EventManager eventManager;
@@ -89,11 +85,11 @@ public class ProviderLaNacionPluginRoot extends AbstractPlugin implements Databa
         supportedCurrencyPairs.add(new CurrencyPairImpl(FiatCurrency.US_DOLLAR, FiatCurrency.ARGENTINE_PESO));
 
         try {
-            dao = new LaNacionProviderDao(pluginDatabaseSystem, pluginId, errorManager);
+            dao = new LaNacionProviderDao(pluginDatabaseSystem, pluginId, this);
             dao.initialize();
             dao.initializeProvider("LaNacion");
         } catch (Exception e) {
-            errorManager.reportUnexpectedPluginException(Plugins.LANACION, UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+            this.reportError(UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
             throw new CantStartPluginException(CantStartPluginException.DEFAULT_MESSAGE, FermatException.wrapException(e), null, null);
         }
         serviceStatus = ServiceStatus.STARTED;
@@ -133,23 +129,25 @@ public class ProviderLaNacionPluginRoot extends AbstractPlugin implements Databa
     @Override
     public ExchangeRate getCurrentExchangeRate(CurrencyPair currencyPair) throws UnsupportedCurrencyPairException, CantGetExchangeRateException {
 
-        if(!isCurrencyPairSupported(currencyPair))
-            throw new UnsupportedCurrencyPairException();
+        if (!isCurrencyPairSupported(currencyPair))
+            throw new UnsupportedCurrencyPairException("Unsupported currencyPair=" + currencyPair.toString());
 
         String content, aux;
         JSONObject json;
         JSONArray jsonArr;
         double purchasePrice = 0;
         double salePrice = 0;
-        try{
-            content = HttpReader.getHTTPContent("http://api.bluelytics.com.ar/json/last_price");
+        boolean providerIsDown = false;
+        boolean invertExchange = true;
+
+        try {
+            content = HttpHelper.getHTTPContent("http://api.bluelytics.com.ar/json/last_price");
             json = new JSONObject("{\"indexes\": " + content + "}");
             jsonArr = json.getJSONArray("indexes");
 
             for (int i = 0; i < jsonArr.length(); ++i) {
                 JSONObject jsonIndex = jsonArr.getJSONObject(i);
-                if(jsonIndex.getString("source").equals("la_nacion"))
-                {
+                if (jsonIndex.getString("source").equals("la_nacion")) {
                     aux = jsonIndex.get("value_buy").toString();
                     purchasePrice = Double.valueOf(aux);
                     aux = jsonIndex.get("value_sell").toString();
@@ -157,23 +155,28 @@ public class ProviderLaNacionPluginRoot extends AbstractPlugin implements Databa
                     break;
                 }
             }
-        }catch (JSONException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.LANACION, UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
-            throw new CantGetExchangeRateException(CantGetExchangeRateException.DEFAULT_MESSAGE,e,"LaNacion CER Provider","Cant Get exchange rate for" + currencyPair.getFrom().getCode() +  "-" + currencyPair.getTo().getCode());
+        } catch (JSONException e) {
+            //   this.reportError( UnexpectedPluginExceptionSeverity.DISABLES_THIS_PLUGIN, e);
+            //   throw new CantGetExchangeRateException(CantGetExchangeRateException.DEFAULT_MESSAGE,e,"LaNacion CER Provider","Cant Get exchange rate for" + currencyPair.getFrom().getCode() +  "-" + currencyPair.getTo().getCode());
+            purchasePrice = 0;
+            salePrice = 0;
+            invertExchange = false;
+            providerIsDown = true;
         }
 
-        if(currencyPair.getTo() == FiatCurrency.US_DOLLAR)
-        {
+        if (currencyPair.getTo() == FiatCurrency.US_DOLLAR && invertExchange) {
             purchasePrice = 1 / purchasePrice;
             salePrice = 1 / salePrice;
         }
 
 
         ExchangeRateImpl exchangeRate = new ExchangeRateImpl(currencyPair.getFrom(), currencyPair.getTo(), purchasePrice, salePrice, (new Date().getTime() / 1000));
-        try {
-            dao.saveExchangeRate(exchangeRate);
-        }catch (CantSaveExchangeRateException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.LANACION, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+        if (!providerIsDown) {
+            try {
+                dao.saveExchangeRate(exchangeRate);
+            } catch (CantSaveExchangeRateException e) {
+                this.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            }
         }
         return exchangeRate;
     }
@@ -217,7 +220,7 @@ public class ProviderLaNacionPluginRoot extends AbstractPlugin implements Databa
             factory.initializeDatabase();
             tableRecordList = factory.getDatabaseTableContent(developerObjectFactory, developerDatabaseTable);
         } catch (CantInitializeLaNacionProviderDatabaseException e) {
-            errorManager.reportUnexpectedPluginException(Plugins.LANACION, UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
+            this.reportError(UnexpectedPluginExceptionSeverity.DISABLES_SOME_FUNCTIONALITY_WITHIN_THIS_PLUGIN, e);
         }
         return tableRecordList;
     }
